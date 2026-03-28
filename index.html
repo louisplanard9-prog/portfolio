@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Louis - Hello, moi c'est Louis !</title>
+    <link rel="icon" href="doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            --bg-color: #f4f1e8;
+            --text-color: #191919;
+            --border-color: #191919;
+            --header-expanded-bg: #e8e3d5;
+            --bubble-bg: #f4f1e8;
+            --bubble-hover-bg: #191919;
+            --bubble-hover-text: #f4f1e8;
+            --line-color: rgba(25,25,25,0.18);
+            font-family: 'Radley', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+            overflow: hidden;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --border-color: #f0f0f0;
+            --header-expanded-bg: #2a2a2a;
+            --bubble-bg: #1a1a1a;
+            --bubble-hover-bg: #f0f0f0;
+            --bubble-hover-text: #1a1a1a;
+            --line-color: rgba(240,240,240,0.15);
+        }
+
+        /* ===== HEADER ===== */
+        header {
+            position: relative;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            background-color: transparent;
+            z-index: 10;
+            transition: background-color 0.4s ease;
+            flex-shrink: 0;
+        }
+
+        .logo-container {
+            position: absolute;
+            left: 50%;
+            top: 25px;
+            transform: translateX(-50%);
+            transition: left 0.5s cubic-bezier(0.4, 1.2, 0.6, 1),
+                        top 0.5s cubic-bezier(0.4, 1.2, 0.6, 1),
+                        transform 0.5s cubic-bezier(0.4, 1.2, 0.6, 1);
+            z-index: 20;
+        }
+
+        #toggleImage {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+            cursor: pointer;
+            display: block;
+            transition: transform 0.3s ease;
+        }
+
+        #toggleImage:hover {
+            transform: scale(1.2) rotate(5deg);
+        }
+
+        /* ===== NAV ===== */
+        .options {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0s 0.5s;
+            margin-left: auto;
+        }
+
+        .options ul {
+            list-style: none;
+            display: flex;
+            gap: 2.5rem;
+            font-family: 'Radley', serif;
+            font-size: 1.2rem;
+            align-items: center;
+        }
+
+        .options li {
+            position: relative;
+        }
+
+        .options a,
+        .theme-toggle {
+            color: var(--text-color);
+            text-decoration: none;
+            border-bottom: 2px solid transparent;
+            padding-bottom: 4px;
+            transition: border-color 0.2s, opacity 0.2s;
+            cursor: pointer;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: 'Radley', serif;
+            font-size: 1.2rem;
+        }
+
+        .options a:hover,
+        .theme-toggle:hover {
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        /* ===== HEADER EXPANDED ===== */
+        header.expanded {
+            background-color: color-mix(in srgb, var(--bg-color) 80%, transparent);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        header.expanded .logo-container {
+            left: 2rem;
+            top: 25px;
+            transform: translateX(0);
+        }
+
+        header.expanded .options {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.3s ease 0.1s, visibility 0s 0s;
+        }
+
+        /* ===== LANGUE SWITCHER ===== */
+        .lang-switcher {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .lang-opt {
+            color: var(--text-color);
+            text-decoration: none;
+            font-family: 'Radley', serif;
+            font-size: 1.2rem;
+            border-bottom: 2px solid transparent;
+            padding-bottom: 4px;
+            transition: border-color 0.2s, opacity 0.2s;
+            opacity: 0.35;
+        }
+
+        .lang-opt.active-lang {
+            border-bottom: 2px solid var(--border-color);
+            opacity: 1;
+        }
+
+        .lang-opt:hover {
+            opacity: 1;
+        }
+
+        .lang-sep {
+            opacity: 0.35;
+            font-family: 'Radley', serif;
+            font-size: 1.2rem;
+            user-select: none;
+        }
+
+        /* ===== VIDEO BACKGROUND ===== */
+        #bg-video {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            object-fit: cover;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        #bg-veil {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            opacity: 0.82;
+            z-index: 1;
+            pointer-events: none;
+            transition: background-color 0.3s;
+        }
+
+        /* ===== MAIN ===== */
+        main {
+            flex: 1;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* ===== MINDMAP CANVAS ===== */
+        #mindmap-canvas {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* ===== HERO ===== */
+        .hero {
+            text-align: center;
+            position: relative;
+            z-index: 3;
+        }
+
+        .hero h1 {
+            font-size: clamp(2rem, 7vw, 5rem);
+            font-weight: 400;
+            line-height: 1.2;
+            cursor: default;
+            user-select: none;
+        }
+
+        .hero .hello {
+            font-style: italic;
+        }
+
+        .hero .rest {
+            font-style: normal;
+        }
+
+        /* ===== BUBBLES ===== */
+        .bubble {
+            position: absolute;
+            z-index: 2;
+            cursor: pointer;
+            opacity: 0;
+            transform: scale(0.5);
+            transition:
+                background-color 0.25s ease,
+                color 0.25s ease,
+                box-shadow 0.25s ease,
+                transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.25s ease;
+        }
+
+        .bubble.visible {
+            opacity: 1;
+            transform: scale(1) translate(0, 0);
+        }
+
+        .bubble-inner {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 1.5px solid var(--border-color);
+            background-color: var(--bubble-bg);
+            color: var(--text-color);
+            font-family: 'Radley', serif;
+            font-size: 0.85rem;
+            text-align: center;
+            padding: 0.5rem;
+            line-height: 1.3;
+            transition:
+                background-color 0.25s ease,
+                color 0.25s ease,
+                box-shadow 0.25s ease;
+        }
+
+        .bubble:hover .bubble-inner {
+            background-color: var(--bubble-hover-bg);
+            color: var(--bubble-hover-text);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+        }
+
+        /* ===== SUBPAGE OVERLAY ===== */
+        .subpage-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background-color: var(--bg-color);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.4s ease;
+            overflow-y: auto;
+        }
+
+        .subpage-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .subpage-header {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2rem 2.5rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        .subpage-back {
+            font-family: 'Radley', serif;
+            font-size: 1rem;
+            color: var(--text-color);
+            cursor: pointer;
+            background: none;
+            border: none;
+            border-bottom: 1.5px solid transparent;
+            padding-bottom: 3px;
+            transition: border-color 0.2s;
+            letter-spacing: 0.03em;
+        }
+
+        .subpage-back:hover {
+            border-bottom-color: var(--border-color);
+        }
+
+        .subpage-title {
+            font-family: 'Radley', serif;
+            font-size: clamp(1.8rem, 5vw, 3rem);
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .subpage-content {
+            width: 100%;
+            max-width: 800px;
+            padding: 3rem 2rem 4rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .subpage-placeholder {
+            text-align: center;
+            opacity: 0.45;
+            font-style: italic;
+            font-size: 1.1rem;
+            margin-top: 4rem;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            text-align: center;
+            padding: 1rem;
+            font-size: 0.9rem;
+            opacity: 0.7;
+            flex-shrink: 0;
+        }
+
+        /* ===== FADE IN ===== */
+        .logo-container,
+        .hero {
+            opacity: 0;
+            animation: fadeIn 1s ease forwards;
+        }
+
+        .hero {
+            animation-delay: 0.2s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Bubble float animation */
+        @keyframes float {
+            0%   { transform: scale(1) translateY(0px); }
+            50%  { transform: scale(1) translateY(-7px); }
+            100% { transform: scale(1) translateY(0px); }
+        }
+
+        .bubble.visible {
+            animation: float var(--float-duration, 4s) ease-in-out infinite;
+            animation-delay: var(--float-delay, 0s);
+        }
+
+        .bubble.visible:hover {
+            animation-play-state: paused;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 600px) {
+            header {
+                height: 100px;
+                padding: 0 1rem;
+            }
+
+            #toggleImage {
+                width: 50px;
+            }
+
+            .options ul {
+                gap: 1rem;
+                font-size: 1rem;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+            }
+
+            header.expanded .logo-container {
+                left: 1rem;
+            }
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="doc/logo.png" alt="Menu" id="toggleImage">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="#" id="nav-home">Accueil</a></li>
+                <li><a href="projets.html" id="nav-projects">Projets</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+                <li><a href="#" id="nav-contact">Contact</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main id="mainArea">
+        <!-- Vidéo de fond -->
+        <video id="bg-video" autoplay muted loop playsinline>
+            <source src="doc/showreel.mp4" type="video/mp4">
+        </video>
+        <div id="bg-veil"></div>
+        <svg id="mindmap-canvas" aria-hidden="true"></svg>
+
+        <div class="hero" id="heroText">
+            <h1>
+                <span class="hello" id="title-hello">Hello,</span>
+                <span class="rest" id="title-rest"> moi c'est Louis!</span>
+            </h1>
+        </div>
+
+        <!-- Bubbles injected by JS -->
+    </main>
+
+    <footer></footer>
+
+    <!-- Subpage overlay -->
+    <div class="subpage-overlay" id="subpageOverlay">
+        <div class="subpage-header">
+            <button class="subpage-back" id="subpageBack">← retour</button>
+            <h2 class="subpage-title" id="subpageTitle"></h2>
+            <div style="width:80px"></div>
+        </div>
+        <div class="subpage-content" id="subpageContent">
+        </div>
+    </div>
+
+    <script>
+        /* ============================================================
+           CONFIG & DATA
+        ============================================================ */
+        const PAGES = [
+            {
+                id: 'musique',
+                labels: { fr: 'Musique', en: 'Music' },
+                size: 100,
+                icon: '♪',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — compositions, projets musicaux, collaborations…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — compositions, music projects, collaborations…</p>'
+                }
+            },
+            {
+                id: 'theatre',
+                labels: { fr: 'Théâtre', en: 'Theatre' },
+                size: 95,
+                icon: '🎭',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — pièces, mises en scène, expériences scéniques…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — plays, direction, stage experiences…</p>'
+                }
+            },
+            {
+                id: 'montages',
+                labels: { fr: 'Montages\nVidéo', en: 'Video\nEditing' },
+                size: 105,
+                icon: '✂',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — montages, clips, réalisations…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — edits, clips, reels…</p>'
+                }
+            },
+            {
+                id: 'films',
+                labels: { fr: 'Films /\nCourt Métrages', en: 'Films /\nShort Films' },
+                size: 120,
+                icon: '🎬',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — films, courts métrages, synopsis…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — films, short films, synopses…</p>'
+                }
+            },
+            {
+                id: 'blog',
+                labels: { fr: 'Blog', en: 'Blog' },
+                size: 88,
+                icon: '✍',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — textes, réflexions, chroniques…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — articles, thoughts, chronicles…</p>'
+                }
+            },
+            {
+                id: 'about',
+                labels: { fr: 'À propos', en: 'About Me' },
+                size: 98,
+                icon: '◎',
+                content: {
+                    fr: '<p class="subpage-placeholder">Bientôt disponible — qui suis-je, mon parcours…</p>',
+                    en: '<p class="subpage-placeholder">Coming soon — who I am, my journey…</p>'
+                }
+            }
+        ];
+
+        /* ============================================================
+           STATE
+        ============================================================ */
+        let currentLang = 'fr';
+        let bubblesReady = false;
+
+        /* ============================================================
+           TRANSLATIONS
+        ============================================================ */
+        const translations = {
+            fr: {
+                navHome:    'Accueil',
+                navProjects:'Projets',
+                navContact: 'Contact',
+                themeDay:   'Mode nuit',
+                themeNight: 'Mode jour',
+                titleHello: 'Hello,',
+                titleRest:  ' moi c\'est Louis!',
+                back:       '← retour',
+            },
+            en: {
+                navHome:    'Home',
+                navProjects:'Projects',
+                navContact: 'Contact',
+                themeDay:   'Dark mode',
+                themeNight: 'Light mode',
+                titleHello: 'Hello,',
+                titleRest:  ' I\'m Louis!',
+                back:       '← back',
+            }
+        };
+
+        /* ============================================================
+           DOM REFS
+        ============================================================ */
+        const toggleImage  = document.getElementById('toggleImage');
+        const header       = document.getElementById('mainHeader');
+        const themeToggle  = document.getElementById('themeToggle');
+        const body         = document.getElementById('mainBody');
+        const favicon      = document.querySelector('link[rel="icon"]');
+        const navHome      = document.getElementById('nav-home');
+        const navProjects  = document.getElementById('nav-projects');
+        const navContact   = document.getElementById('nav-contact');
+        const titleHello   = document.getElementById('title-hello');
+        const titleRest    = document.getElementById('title-rest');
+        const langFr       = document.getElementById('lang-fr');
+        const langEn       = document.getElementById('lang-en');
+        const mainArea     = document.getElementById('mainArea');
+        const svgCanvas    = document.getElementById('mindmap-canvas');
+        const heroText     = document.getElementById('heroText');
+        const subpageOverlay = document.getElementById('subpageOverlay');
+        const subpageTitle   = document.getElementById('subpageTitle');
+        const subpageContent = document.getElementById('subpageContent');
+        const subpageBack    = document.getElementById('subpageBack');
+
+        /* ============================================================
+           BUBBLE POSITIONING
+           Place bubbles in an orbit around center, spread organically
+        ============================================================ */
+        function getBubblePositions(n, containerW, containerH) {
+            const cx = containerW / 2;
+            const cy = containerH / 2;
+
+            // Measure the hero title to compute a safe exclusion zone
+            const heroRect = heroText.getBoundingClientRect();
+            const mainRect = mainArea.getBoundingClientRect();
+            const heroW = heroRect.width;
+            const heroH = heroRect.height;
+
+            // Half-dimensions of the title + padding so bubbles stay clear
+            const padX = 60;
+            const padY = 50;
+            const safeRx = heroW / 2 + padX + 60; // horizontal radius of orbit
+            const safeRy = heroH / 2 + padY + 60; // vertical radius of orbit
+
+            // Cap to container size
+            const rx = Math.min(safeRx, containerW * 0.44);
+            const ry = Math.min(safeRy, containerH * 0.42);
+
+            // Manually curated angles so bubbles feel natural, not mechanical
+            const angles = [
+                -115, // top-left    → Musique
+                -55,  // top         → Théâtre
+                15,   // top-right   → Montages
+                80,   // right       → Films
+                120,  // bottom-left → Blog
+                175,  // left        → About
+            ];
+
+            // Extra Y nudge per bubble (index-based), pour ajustements fins
+            const nudgeY = [0, 0, 0, 0, 55, 0];
+
+            return angles.slice(0, n).map((deg, i) => {
+                const rad = deg * Math.PI / 180;
+                const jitterX = (Math.random() - 0.5) * 28;
+                const jitterY = (Math.random() - 0.5) * 18;
+                return {
+                    x: cx + rx * Math.cos(rad) + jitterX,
+                    y: cy + ry * Math.sin(rad) + jitterY + (nudgeY[i] || 0),
+                };
+            });
+        }
+
+        /* ============================================================
+           BUILD BUBBLES
+        ============================================================ */
+        let bubbleEls = [];
+
+        function buildBubbles() {
+            // Remove old
+            bubbleEls.forEach(el => el.remove());
+            bubbleEls = [];
+            while (svgCanvas.firstChild) svgCanvas.removeChild(svgCanvas.firstChild);
+
+            const W = mainArea.offsetWidth;
+            const H = mainArea.offsetHeight;
+
+            const positions = getBubblePositions(PAGES.length, W, H);
+
+            // Center of hero text (approx)
+            const cx = W / 2;
+            const cy = H / 2;
+
+            PAGES.forEach((page, i) => {
+                const pos = positions[i];
+                const size = page.size;
+
+                // Create SVG line
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', cx);
+                line.setAttribute('y1', cy);
+                line.setAttribute('x2', pos.x);
+                line.setAttribute('y2', pos.y);
+                line.setAttribute('stroke', 'var(--line-color)');
+                line.setAttribute('stroke-width', '1');
+                line.setAttribute('stroke-dasharray', '4 5');
+                svgCanvas.appendChild(line);
+
+                // Create bubble
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                bubble.dataset.pageId = page.id;
+                bubble.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${pos.x - size / 2}px;
+                    top: ${pos.y - size / 2}px;
+                    --float-duration: ${3.5 + i * 0.4}s;
+                    --float-delay: ${i * 0.22}s;
+                `;
+
+                const label = (page.labels[currentLang] || page.labels.fr).replace(/\n/g, '<br>');
+                bubble.innerHTML = `<div class="bubble-inner">${label}</div>`;
+                bubble.setAttribute('role', 'button');
+                bubble.setAttribute('tabindex', '0');
+                bubble.setAttribute('aria-label', page.labels[currentLang]);
+
+                bubble.addEventListener('click', () => {
+                    const routes = {
+                        'musique':  'projets.html#musique',
+                        'theatre':  'projets.html#theatre',
+                        'montages': 'projets.html#montages',
+                        'films':    'projets.html#films',
+                        'blog':     'blog.html',
+                        'about':    'about.html',
+                    };
+                    if (routes[page.id]) {
+                        window.location.href = routes[page.id];
+                    } else {
+                        openSubpage(page.id);
+                    }
+                });
+                bubble.addEventListener('keydown', e => {
+                    if (e.key === 'Enter') bubble.click();
+                });
+
+                mainArea.appendChild(bubble);
+                bubbleEls.push(bubble);
+
+                // Staggered reveal
+                setTimeout(() => bubble.classList.add('visible'), 400 + i * 120);
+            });
+
+            bubblesReady = true;
+        }
+
+        /* ============================================================
+           UPDATE BUBBLE LABELS (lang change without rebuild)
+        ============================================================ */
+        function updateBubbleLabels() {
+            bubbleEls.forEach((el, i) => {
+                const page = PAGES[i];
+                const label = (page.labels[currentLang] || page.labels.fr).replace(/\n/g, '<br>');
+                el.querySelector('.bubble-inner').innerHTML = label;
+                el.setAttribute('aria-label', page.labels[currentLang]);
+            });
+        }
+
+        /* ============================================================
+           SUBPAGE
+        ============================================================ */
+        function openSubpage(pageId) {
+            const page = PAGES.find(p => p.id === pageId);
+            if (!page) return;
+            subpageTitle.textContent = page.labels[currentLang];
+            subpageTitle.dataset.pageId = pageId;
+            subpageContent.innerHTML = page.content[currentLang] || page.content.fr;
+            subpageBack.textContent = translations[currentLang].back;
+            subpageOverlay.classList.add('active');
+            subpageOverlay.scrollTop = 0;
+        }
+
+        function closeSubpage() {
+            subpageOverlay.classList.remove('active');
+        }
+
+        subpageBack.addEventListener('click', closeSubpage);
+
+        // Close on Escape
+        document.addEventListener('keydown', e => {
+            if (e.key === 'Escape') closeSubpage();
+        });
+
+        /* ============================================================
+           LANG
+        ============================================================ */
+        function setLang(lang) {
+            currentLang = lang;
+            const t = translations[lang];
+            navHome.textContent     = t.navHome;
+            navProjects.textContent = t.navProjects;
+            navContact.textContent  = t.navContact;
+            titleHello.textContent  = t.titleHello;
+            titleRest.textContent   = t.titleRest;
+            subpageBack.textContent = t.back;
+
+            langFr.classList.toggle('active-lang', lang === 'fr');
+            langEn.classList.toggle('active-lang', lang === 'en');
+
+            themeToggle.textContent = body.classList.contains('dark-mode')
+                ? t.themeNight
+                : t.themeDay;
+
+            // Update bubble labels if built
+            if (bubblesReady) updateBubbleLabels();
+
+            // Update subpage if open
+            if (subpageOverlay.classList.contains('active')) {
+                const pageId = subpageTitle.dataset.pageId;
+                if (pageId) {
+                    const page = PAGES.find(p => p.id === pageId);
+                    if (page) {
+                        subpageTitle.textContent = page.labels[lang];
+                        subpageContent.innerHTML = page.content[lang] || page.content.fr;
+                    }
+                }
+            }
+        }
+
+        /* ============================================================
+           THEME
+        ============================================================ */
+        toggleImage.addEventListener('click', () => header.classList.toggle('expanded'));
+
+        themeToggle.addEventListener('click', () => {
+            body.classList.toggle('dark-mode');
+            const isDark = body.classList.contains('dark-mode');
+            themeToggle.textContent = isDark
+                ? translations[currentLang].themeNight
+                : translations[currentLang].themeDay;
+            const logoSrc = isDark ? 'doc/logo_nuit.png' : 'doc/logo.png';
+            toggleImage.src = logoSrc;
+            favicon.href    = logoSrc;
+        });
+
+        langFr.addEventListener('click', e => { e.preventDefault(); setLang('fr'); });
+        langEn.addEventListener('click', e => { e.preventDefault(); setLang('en'); });
+
+        document.querySelectorAll('#nav-home, #nav-projects, #nav-contact').forEach(link => {
+            link.addEventListener('click', () => header.classList.remove('expanded'));
+        });
+
+        // nav-home also closes subpage
+        navHome.addEventListener('click', () => closeSubpage());
+
+        /* ============================================================
+           RESIZE — rebuild bubble positions
+        ============================================================ */
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(buildBubbles, 250);
+        });
+
+        /* ============================================================
+           INIT
+        ============================================================ */
+        setLang('fr');
+
+        // Wait for hero animation before placing bubbles
+        setTimeout(buildBubbles, 700);
+    </script>
+</body>
+</html>

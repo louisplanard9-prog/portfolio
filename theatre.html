@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Louis — Théâtre</title>
+    <link rel="icon" href="doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            --bg-color: #f4f1e8; --text-color: #191919; --border-color: #191919;
+            --card-bg: rgba(25,25,25,0.04);
+            font-family: 'Radley', serif;
+            background-color: var(--bg-color); color: var(--text-color);
+            min-height: 100vh; display: flex; flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode { --bg-color: #1a1a1a; --text-color: #f0f0f0; --border-color: #f0f0f0; --card-bg: rgba(240,240,240,0.05); }
+        header { position: sticky; top: 0; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background-color: transparent; z-index: 100; transition: background-color 0.4s ease; flex-shrink: 0; }
+        header.expanded { background-color: color-mix(in srgb, var(--bg-color) 80%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .logo-container { position: absolute; left: 50%; top: 25px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4,1.2,0.6,1), transform 0.5s cubic-bezier(0.4,1.2,0.6,1); z-index: 20; }
+        header.expanded .logo-container { left: 2rem; transform: translateX(0); }
+        #toggleImage { width: 75px; height: 75px; object-fit: contain; cursor: pointer; display: block; transition: transform 0.3s ease; }
+        #toggleImage:hover { transform: scale(1.2) rotate(5deg); }
+        .options { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.5s; margin-left: auto; }
+        header.expanded .options { opacity: 1; visibility: visible; transition: opacity 0.3s ease 0.1s, visibility 0s 0s; }
+        .options ul { list-style: none; display: flex; gap: 2.5rem; font-family: 'Radley', serif; font-size: 1.2rem; align-items: center; }
+        .options a, .theme-toggle { color: var(--text-color); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Radley', serif; font-size: 1.2rem; }
+        .options a:hover, .theme-toggle:hover { border-bottom: 2px solid var(--border-color); }
+        .lang-switcher { display: flex; align-items: center; gap: 0.3rem; }
+        .lang-opt { color: var(--text-color); text-decoration: none; font-family: 'Radley', serif; font-size: 1.2rem; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s, opacity 0.2s; opacity: 0.35; }
+        .lang-opt.active-lang { border-bottom: 2px solid var(--border-color); opacity: 1; }
+        .lang-opt:hover { opacity: 1; }
+        .lang-sep { opacity: 0.35; font-family: 'Radley', serif; font-size: 1.2rem; user-select: none; }
+        .back-bar { border-bottom: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent); }
+        .back-bar-inner { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0; color: var(--text-color); text-decoration: none; font-size: 0.88rem; opacity: 0.45; transition: opacity 0.2s; }
+        .back-link:hover { opacity: 1; }
+        main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 2rem 6rem; }
+        .project-section { padding: 4rem 0 3rem; opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 0.05s; }
+        .section-header { display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .section-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; font-style: italic; line-height: 1; }
+        .section-label { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.35; }
+        .spectacle-card { border: 1px solid var(--border-color); padding: 1.5rem; margin-bottom: 1rem; background: var(--card-bg); display: flex; flex-direction: column; gap: 0.7rem; }
+        .spectacle-header { display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; }
+        .spectacle-title { font-size: 1.3rem; font-weight: 400; font-style: italic; }
+        .spectacle-year { font-size: 0.82rem; opacity: 0.4; }
+        .spectacle-role { font-size: 0.88rem; opacity: 0.6; border-left: 1.5px solid var(--border-color); padding-left: 0.8rem; }
+        .spectacle-desc { font-size: 0.92rem; line-height: 1.65; opacity: 0.72; }
+        .editorial-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; margin-top: 2.5rem; }
+        .editorial-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--border-color) 25%, transparent); }
+        .editorial-text { display: flex; flex-direction: column; gap: 0.8rem; }
+        .editorial-text h3 { font-size: 1.2rem; font-weight: 400; font-style: italic; }
+        .editorial-text p { font-size: 0.92rem; line-height: 1.75; opacity: 0.7; }
+        footer { border-top: 1px solid var(--border-color); padding: 3rem 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; flex-shrink: 0; }
+        .footer-name { font-size: 1.5rem; font-style: italic; font-weight: 400; }
+        .footer-contact { display: flex; flex-direction: column; gap: 0.5rem; text-align: right; }
+        .footer-contact a { color: var(--text-color); text-decoration: none; font-size: 0.95rem; border-bottom: 1.5px solid transparent; padding-bottom: 2px; transition: border-color 0.2s; opacity: 0.65; }
+        .footer-contact a:hover { border-bottom-color: var(--border-color); opacity: 1; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 600px) {
+            header { padding: 0 1.2rem; } main { padding: 0 1.2rem 4rem; }
+            .editorial-block { grid-template-columns: 1fr; }
+            footer { padding: 2rem 1.2rem; flex-direction: column; } .footer-contact { text-align: left; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="doc/logo.png" alt="Menu" id="toggleImage" onclick="document.getElementById('mainHeader').classList.toggle('expanded')">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html">Accueil</a></li>
+                <li><a href="blog.html">Blog</a></li>
+                <li><a href="about.html">À propos</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="back-bar">
+        <div class="back-bar-inner">
+            <a href="projets.html" class="back-link">← Projets</a>
+        </div>
+    </div>
+
+    <main>
+        <div class="project-section">
+            <div class="section-header">
+                <h2 class="section-title">Théâtre</h2>
+                <span class="section-label">02</span>
+            </div>
+
+            <div class="spectacle-card">
+                <div class="spectacle-header">
+                    <span class="spectacle-title">Nom du spectacle</span>
+                    <span class="spectacle-year">2024</span>
+                </div>
+                <div class="spectacle-role">Rôle / Mise en scène</div>
+                <div class="spectacle-desc">Une description de ce spectacle — son univers, son auteur, ce que ce rôle représente pour toi.</div>
+            </div>
+            <div class="spectacle-card">
+                <div class="spectacle-header">
+                    <span class="spectacle-title">Nom du spectacle</span>
+                    <span class="spectacle-year">2023</span>
+                </div>
+                <div class="spectacle-role">Rôle / Mise en scène</div>
+                <div class="spectacle-desc">Une description de ce spectacle.</div>
+            </div>
+
+            <div class="editorial-block">
+                <img src="doc/photo_theatre.jpg" alt="" class="editorial-img" onerror="this.style.background='var(--card-bg)'; this.removeAttribute('src');">
+                <div class="editorial-text">
+                    <h3>La scène</h3>
+                    <p>Un texte sur ta relation au théâtre, comment tu as commencé, ce que la scène t'apporte.</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-name">Louis</div>
+        <div class="footer-contact">
+            <a href="mailto:ton@email.com">ton@email.com</a>
+            <a href="#">Instagram</a>
+        </div>
+    </footer>
+
+    <script>
+        let currentLang = 'fr';
+        const T = { fr: { themeDay: 'Mode nuit', themeNight: 'Mode jour' }, en: { themeDay: 'Dark mode', themeNight: 'Light mode' } };
+        const mainBody = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon = document.querySelector('link[rel="icon"]');
+        themeToggle.onclick = function() {
+            mainBody.classList.toggle('dark-mode');
+            const isDark = mainBody.classList.contains('dark-mode');
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? 'doc/logo_nuit.png' : 'doc/logo.png';
+            toggleImage.src = src; favicon.href = src;
+        };
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); currentLang = 'fr'; document.getElementById('lang-fr').classList.add('active-lang'); document.getElementById('lang-en').classList.remove('active-lang'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); currentLang = 'en'; document.getElementById('lang-en').classList.add('active-lang'); document.getElementById('lang-fr').classList.remove('active-lang'); };
+    </script>
+</body>
+</html>
