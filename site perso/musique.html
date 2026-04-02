@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Louis — Musique</title>
+    <link rel="icon" href="doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { --bg-color: #f4f1e8; --text-color: #191919; --border-color: #191919; --card-bg: rgba(25,25,25,0.04); font-family: 'Radley', serif; background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; flex-direction: column; transition: background-color 0.3s, color 0.3s; }
+        body.dark-mode { --bg-color: #1a1a1a; --text-color: #f0f0f0; --border-color: #f0f0f0; --card-bg: rgba(240,240,240,0.05); }
+        header { position: sticky; top: 0; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background-color: transparent; z-index: 100; transition: background-color 0.4s ease; flex-shrink: 0; }
+        header.expanded { background-color: color-mix(in srgb, var(--bg-color) 80%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .logo-container { position: absolute; left: 50%; top: 25px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4,1.2,0.6,1), transform 0.5s cubic-bezier(0.4,1.2,0.6,1); z-index: 20; }
+        header.expanded .logo-container { left: 2rem; transform: translateX(0); }
+        #toggleImage { width: 75px; height: 75px; object-fit: contain; cursor: pointer; display: block; transition: transform 0.3s ease; }
+        #toggleImage:hover { transform: scale(1.2) rotate(5deg); }
+        .options { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.5s; margin-left: auto; }
+        header.expanded .options { opacity: 1; visibility: visible; transition: opacity 0.3s ease 0.1s, visibility 0s 0s; }
+        .options ul { list-style: none; display: flex; gap: 2.5rem; font-family: 'Radley', serif; font-size: 1.2rem; align-items: center; }
+        .options a, .theme-toggle { color: var(--text-color); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Radley', serif; font-size: 1.2rem; }
+        .options a:hover, .theme-toggle:hover { border-bottom: 2px solid var(--border-color); }
+        .lang-switcher { display: flex; align-items: center; gap: 0.3rem; }
+        .lang-opt { color: var(--text-color); text-decoration: none; font-family: 'Radley', serif; font-size: 1.2rem; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s, opacity 0.2s; opacity: 0.35; }
+        .lang-opt.active-lang { border-bottom: 2px solid var(--border-color); opacity: 1; }
+        .lang-opt:hover { opacity: 1; }
+        .lang-sep { opacity: 0.35; font-family: 'Radley', serif; font-size: 1.2rem; user-select: none; }
+        .back-bar { border-bottom: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent); }
+        .back-bar-inner { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0; color: var(--text-color); text-decoration: none; font-size: 0.88rem; opacity: 0.45; transition: opacity 0.2s; }
+        .back-link:hover { opacity: 1; }
+        main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 2rem 6rem; }
+        .project-section { padding: 4rem 0 3rem; opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 0.05s; }
+        .section-header { display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .section-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; font-style: italic; line-height: 1; }
+        .section-label { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.35; }
+        .album-card { display: grid; grid-template-columns: 180px 1fr; gap: 2rem; padding: 1.8rem; border: 1px solid var(--border-color); background: var(--card-bg); }
+        .album-cover { width: 180px; height: 180px; object-fit: cover; display: block; background: var(--card-bg); border: 1px solid var(--border-color); }
+        .album-cover-placeholder { width: 180px; height: 180px; background: var(--card-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 2rem; opacity: 0.3; }
+        .album-info { display: flex; flex-direction: column; gap: 0.6rem; justify-content: center; }
+        .album-title { font-size: 1.4rem; font-weight: 400; font-style: italic; }
+        .album-meta { font-size: 0.88rem; opacity: 0.5; }
+        .album-desc { font-size: 0.92rem; line-height: 1.65; opacity: 0.72; }
+        .player { margin-top: 1.2rem; border-top: 1px solid var(--border-color); padding-top: 1.2rem; display: flex; flex-direction: column; gap: 0.7rem; }
+        .track { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid color-mix(in srgb, var(--border-color) 18%, transparent); cursor: pointer; transition: opacity 0.2s; }
+        .track:last-child { border-bottom: none; }
+        .track:hover { opacity: 0.7; }
+        .track.playing .track-num { display: none; }
+        .track.playing .track-play-icon { display: block !important; }
+        .track-num { font-size: 0.82rem; opacity: 0.35; text-align: center; }
+        .track-play-icon { display: none; font-size: 0.82rem; text-align: center; }
+        .track-name { font-size: 0.92rem; }
+        .track-duration { font-size: 0.82rem; opacity: 0.4; }
+        .player-controls { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.4rem; }
+        .play-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border-color); background: none; color: var(--text-color); font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s, color 0.2s; }
+        .play-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+        .progress-bar-bg { width: 100%; height: 2px; background: color-mix(in srgb, var(--border-color) 20%, transparent); cursor: pointer; position: relative; }
+        .progress-bar-fill { height: 100%; background: var(--text-color); width: 0%; transition: width 0.3s linear; pointer-events: none; }
+        .progress-times { display: flex; justify-content: space-between; font-size: 0.72rem; opacity: 0.4; }
+        .now-playing-title { font-size: 0.82rem; opacity: 0.6; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .editorial-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; margin-top: 2.5rem; }
+        .editorial-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--border-color) 25%, transparent); }
+        .editorial-text { display: flex; flex-direction: column; gap: 0.8rem; }
+        .editorial-text h3 { font-size: 1.2rem; font-weight: 400; font-style: italic; }
+        .editorial-text p { font-size: 0.92rem; line-height: 1.75; opacity: 0.7; }
+        .editorial-text a { color: inherit; text-decoration: underline; opacity: 0.7; }
+        .editorial-text a:hover { opacity: 1; }
+        footer { border-top: 1px solid var(--border-color); padding: 3rem 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; flex-shrink: 0; }
+        .footer-name { font-size: 1.5rem; font-style: italic; font-weight: 400; }
+        .footer-contact { display: flex; flex-direction: column; gap: 0.5rem; text-align: right; }
+        .footer-contact a { color: var(--text-color); text-decoration: none; font-size: 0.95rem; border-bottom: 1.5px solid transparent; padding-bottom: 2px; transition: border-color 0.2s; opacity: 0.65; }
+        .footer-contact a:hover { border-bottom-color: var(--border-color); opacity: 1; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 600px) {
+            header { padding: 0 1.2rem; } main { padding: 0 1.2rem 4rem; }
+            .album-card { grid-template-columns: 1fr; }
+            .album-cover, .album-cover-placeholder { width: 100%; height: 180px; }
+            .editorial-block { grid-template-columns: 1fr; }
+            footer { padding: 2rem 1.2rem; flex-direction: column; } .footer-contact { text-align: left; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="doc/logo.png" alt="Menu" id="toggleImage" onclick="document.getElementById('mainHeader').classList.toggle('expanded')">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html" id="nav-home">Accueil</a></li>
+                <li><a href="projets.html" id="nav-projects">Projets</a></li>
+                <li><a href="about.html" id="nav-about">À propos</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="back-bar">
+        <div class="back-bar-inner">
+            <a href="projets.html" class="back-link" id="back-link">← Projets</a>
+        </div>
+    </div>
+
+    <main>
+        <div class="project-section">
+            <div class="section-header">
+                <h2 class="section-title" id="section-title">Musique</h2>
+                <span class="section-label">01</span>
+            </div>
+            <div class="album-card">
+                <img src="doc/me_playing_guitar.png" alt="Pochette" class="album-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="album-cover-placeholder" style="display:none">♪</div>
+                <div class="album-info">
+                    <div class="album-title" id="album-title">Projets</div>
+                    <div class="album-meta" id="album-meta">Depuis 2021 · Rock / Metal / Soft</div>
+                    <div class="album-desc" id="album-desc">Quelques maquettes de chansons en cours de développement.</div>
+                    <div class="player">
+                        <div class="track" data-src="doc/audio/titre_1.wav" onclick="selectTrack(this)">
+                            <span class="track-num">1</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 1</span><span class="track-duration">1:47</span>
+                        </div>
+                        <div class="track" data-src="doc/audio/titre_2.wav" data-offset="6" onclick="selectTrack(this)">
+                            <span class="track-num">2</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 2</span><span class="track-duration">1:49</span>
+                        </div>
+                        <div class="track" data-src="doc/audio/titre_3.wav" data-end="35" onclick="selectTrack(this)">
+                            <span class="track-num">3</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 3</span><span class="track-duration">0:35</span>
+                        </div>
+                        <div class="player-controls">
+                            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                            <div class="progress-wrap">
+                                <div class="progress-bar-bg" id="progressBg" onclick="seekTo(event)">
+                                    <div class="progress-bar-fill" id="progressFill"></div>
+                                </div>
+                                <div class="progress-times">
+                                    <span id="timeElapsed">0:00</span>
+                                    <span id="nowPlayingTitle" class="now-playing-title">—</span>
+                                    <span id="timeDuration">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="editorial-block">
+                <img src="doc/lucas_et_moi.jpg" alt="" class="editorial-img" onerror="this.style.background='var(--card-bg)'; this.removeAttribute('src');">
+                <div class="editorial-text">
+                    <h3 id="editorial-title">Punch</h3>
+                    <p id="editorial-text">Depuis 2021, Punch écrit et compose des morceaux de Rock / Métal. Le projet naît d'une amitié entre deux musiciens et d'une passion commune pour le rock. Nous avons eu l'occasion de nous produire sur des petites scènes du Valenciennois et souhaitons dorénavant concrétiser notre projet en nous élargissant à de nouveaux styles et à de nouveaux membres. Alors si tu es musicien et que tu souhaiterais jouer avec nous, n'hésite pas à <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">nous contacter</a> !</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+    <div class="footer-name">Louis</div>
+    <div class="footer-contact">
+        <a href="mailto:louisplanardpro@gmail.com">louisplanardpro@gmail.com</a>
+        <a href="https://www.instagram.com/louis_fait_des_films" target="_blank">Instagram</a>
+    </div>
+    </footer>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        let currentLang = 'fr';
+        const T = {
+            fr: {
+                themeDay: 'Mode nuit', themeNight: 'Mode jour',
+                navHome: 'Accueil', navProjects: 'Projets', navAbout: 'À propos',
+                backLink: '← Projets',
+                sectionTitle: 'Musique',
+                albumTitle: 'Projets',
+                albumMeta: 'Depuis 2021 · Rock / Metal / Soft',
+                albumDesc: 'Quelques maquettes de chansons en cours de développement.',
+                editorialTitle: 'Punch',
+                editorialText: 'Depuis 2021, Punch écrit et compose des morceaux de Rock / Métal. Le projet naît d\'une amitié entre deux musiciens et d\'une passion commune pour le rock. Nous avons eu l\'occasion de nous produire sur des petites scènes du Valenciennois et souhaitons dorénavant concrétiser notre projet en nous élargissant à de nouveaux styles et à de nouveaux membres. Alors si tu es musicien et que tu souhaiterais jouer avec nous, n\'hésite pas à <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">nous contacter</a> !',
+            },
+            en: {
+                themeDay: 'Dark mode', themeNight: 'Light mode',
+                navHome: 'Home', navProjects: 'Projects', navAbout: 'About',
+                backLink: '← Projects',
+                sectionTitle: 'Music',
+                albumTitle: 'Projects',
+                albumMeta: 'Since 2021 · Rock / Metal / Soft',
+                albumDesc: 'A few song demos currently in development.',
+                editorialTitle: 'Punch',
+                editorialText: 'Since 2021, Punch has been writing and composing Rock and Metal music. The project started from a friendship between two musicians and a shared love for rock. We\'ve performed on small stages around the Valenciennois area, and now we\'re ready to take the project further by exploring new styles and bringing in new members. So if you\'re a musician interested in playing with us, don\'t hesitate to <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">contact us</a>!',
+            }
+        };
+
+        const mainBody    = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon     = document.querySelector('link[rel="icon"]');
+
+        function saveDarkMode(isDark) { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); }
+        function saveLang(lang) { localStorage.setItem('lang', lang); }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = T[lang];
+            document.getElementById('nav-home').textContent     = t.navHome;
+            document.getElementById('nav-projects').textContent = t.navProjects;
+            document.getElementById('nav-about').textContent    = t.navAbout;
+            document.getElementById('back-link').textContent    = t.backLink;
+            document.getElementById('section-title').textContent = t.sectionTitle;
+            document.getElementById('album-title').textContent  = t.albumTitle;
+            document.getElementById('album-meta').textContent   = t.albumMeta;
+            document.getElementById('album-desc').textContent   = t.albumDesc;
+            document.getElementById('editorial-title').textContent = t.editorialTitle;
+            document.getElementById('editorial-text').innerHTML  = t.editorialText;
+            themeToggle.textContent = mainBody.classList.contains('dark-mode') ? t.themeNight : t.themeDay;
+            document.getElementById('lang-fr').classList.toggle('active-lang', lang === 'fr');
+            document.getElementById('lang-en').classList.toggle('active-lang', lang === 'en');
+            saveLang(lang);
+        }
+
+        function loadPreferences() {
+            const savedLang = localStorage.getItem('lang');
+            if (savedLang === 'fr' || savedLang === 'en') setLang(savedLang);
+            else setLang('fr');
+            const savedDark = localStorage.getItem('darkMode');
+            if (savedDark === 'true') {
+                mainBody.classList.add('dark-mode');
+                themeToggle.textContent = T[currentLang].themeNight;
+                const src = 'doc/logo_nuit.png';
+                toggleImage.src = src; favicon.href = src;
+            } else {
+                mainBody.classList.remove('dark-mode');
+                themeToggle.textContent = T[currentLang].themeDay;
+                const src = 'doc/logo.png';
+                toggleImage.src = src; favicon.href = src;
+            }
+        }
+
+        themeToggle.onclick = function() {
+            const isDark = mainBody.classList.toggle('dark-mode');
+            saveDarkMode(isDark);
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? 'doc/logo_nuit.png' : 'doc/logo.png';
+            toggleImage.src = src; favicon.href = src;
+        };
+
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); setLang('fr'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); setLang('en'); };
+        loadPreferences();
+
+        // ===== AUDIO PLAYER =====
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressBg = document.getElementById('progressBg');
+        const timeElapsed = document.getElementById('timeElapsed');
+        const timeDuration = document.getElementById('timeDuration');
+        const nowPlaying = document.getElementById('nowPlayingTitle');
+        let currentTrackEl = null;
+
+        function fmt(s) { if (isNaN(s)) return '0:00'; return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0'); }
+
+        function selectTrack(el) {
+            document.querySelectorAll('.track').forEach(function(t) { t.classList.remove('playing'); });
+            el.classList.add('playing'); currentTrackEl = el;
+            audio.src = el.dataset.src;
+            nowPlaying.textContent = el.querySelector('.track-name').textContent;
+            var offset = parseFloat(el.dataset.offset) || 0;
+            audio.play().then(function() { if (offset > 0) audio.currentTime = offset; playBtn.textContent = '‖'; }).catch(function(){});
+        }
+
+        function togglePlay() {
+            if (!currentTrackEl) { var first = document.querySelector('.track'); if (first) selectTrack(first); return; }
+            if (audio.paused) { audio.play(); playBtn.textContent = '‖'; }
+            else { audio.pause(); playBtn.textContent = '▶'; }
+        }
+
+        function seekTo(e) {
+            if (!audio.duration) return;
+            var rect = progressBg.getBoundingClientRect();
+            var startAt = currentTrackEl ? (parseFloat(currentTrackEl.dataset.offset) || 0) : 0;
+            var endAt = currentTrackEl ? parseFloat(currentTrackEl.dataset.end) : NaN;
+            var effectiveDuration = !isNaN(endAt) ? (endAt - startAt) : (audio.duration - startAt);
+            audio.currentTime = startAt + ((e.clientX - rect.left) / rect.width) * effectiveDuration;
+        }
+
+        audio.addEventListener('timeupdate', function() {
+            if (!audio.duration) return;
+            if (currentTrackEl) {
+                var endAt = parseFloat(currentTrackEl.dataset.end);
+                if (!isNaN(endAt) && audio.currentTime >= endAt) {
+                    audio.pause(); audio.currentTime = parseFloat(currentTrackEl.dataset.offset) || 0;
+                    playBtn.textContent = '▶'; progressFill.style.width = '0%'; timeElapsed.textContent = '0:00';
+                    var tracks = Array.from(document.querySelectorAll('.track'));
+                    var idx = tracks.indexOf(currentTrackEl);
+                    currentTrackEl.classList.remove('playing');
+                    if (idx < tracks.length - 1) selectTrack(tracks[idx + 1]);
+                    return;
+                }
+            }
+            var startAt = currentTrackEl ? (parseFloat(currentTrackEl.dataset.offset) || 0) : 0;
+            var endAt2 = currentTrackEl ? parseFloat(currentTrackEl.dataset.end) : NaN;
+            var effectiveDuration = !isNaN(endAt2) ? (endAt2 - startAt) : (audio.duration - startAt);
+            var elapsed = audio.currentTime - startAt;
+            progressFill.style.width = Math.max(0, Math.min(1, elapsed / effectiveDuration)) * 100 + '%';
+            timeElapsed.textContent = fmt(Math.max(0, elapsed));
+            timeDuration.textContent = fmt(effectiveDuration);
+        });
+
+        audio.addEventListener('ended', function() {
+            playBtn.textContent = '▶'; progressFill.style.width = '0%';
+            var tracks = Array.from(document.querySelectorAll('.track'));
+            var idx = tracks.indexOf(currentTrackEl);
+            if (currentTrackEl) currentTrackEl.classList.remove('playing');
+            if (idx >= 0 && idx < tracks.length - 1) selectTrack(tracks[idx + 1]);
+        });
+
+        document.querySelectorAll('.track').forEach(function(t) {
+            var tmp = new Audio(t.dataset.src);
+            tmp.addEventListener('loadedmetadata', function() {
+                var endAt = parseFloat(t.dataset.end), startAt = parseFloat(t.dataset.offset) || 0;
+                t.querySelector('.track-duration').textContent = !isNaN(endAt) ? fmt(endAt - startAt) : fmt(tmp.duration - startAt);
+            });
+        });
+    </script>
+</body>
+</html>

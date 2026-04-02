@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Louis — Montages Vidéo (en construction)</title>
+    <link rel="icon" href="doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { --bg-color: #f4f1e8; --text-color: #191919; --border-color: #191919; --card-bg: rgba(25,25,25,0.04); font-family: 'Radley', serif; background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; flex-direction: column; transition: background-color 0.3s, color 0.3s; }
+        body.dark-mode { --bg-color: #1a1a1a; --text-color: #f0f0f0; --border-color: #f0f0f0; --card-bg: rgba(240,240,240,0.05); }
+        header { position: sticky; top: 0; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background-color: transparent; z-index: 100; transition: background-color 0.4s ease; flex-shrink: 0; }
+        header.expanded { background-color: color-mix(in srgb, var(--bg-color) 80%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .logo-container { position: absolute; left: 50%; top: 25px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4,1.2,0.6,1), transform 0.5s cubic-bezier(0.4,1.2,0.6,1); z-index: 20; }
+        header.expanded .logo-container { left: 2rem; transform: translateX(0); }
+        #toggleImage { width: 75px; height: 75px; object-fit: contain; cursor: pointer; display: block; transition: transform 0.3s ease; }
+        #toggleImage:hover { transform: scale(1.2) rotate(5deg); }
+        .options { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.5s; margin-left: auto; }
+        header.expanded .options { opacity: 1; visibility: visible; transition: opacity 0.3s ease 0.1s, visibility 0s 0s; }
+        .options ul { list-style: none; display: flex; gap: 2.5rem; font-family: 'Radley', serif; font-size: 1.2rem; align-items: center; }
+        .options a, .theme-toggle { color: var(--text-color); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Radley', serif; font-size: 1.2rem; }
+        .options a:hover, .theme-toggle:hover { border-bottom: 2px solid var(--border-color); }
+        .lang-switcher { display: flex; align-items: center; gap: 0.3rem; }
+        .lang-opt { color: var(--text-color); text-decoration: none; font-family: 'Radley', serif; font-size: 1.2rem; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s, opacity 0.2s; opacity: 0.35; }
+        .lang-opt.active-lang { border-bottom: 2px solid var(--border-color); opacity: 1; }
+        .lang-opt:hover { opacity: 1; }
+        .lang-sep { opacity: 0.35; font-family: 'Radley', serif; font-size: 1.2rem; user-select: none; }
+        .back-bar { border-bottom: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent); }
+        .back-bar-inner { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0; color: var(--text-color); text-decoration: none; font-size: 0.88rem; opacity: 0.45; transition: opacity 0.2s; }
+        .back-link:hover { opacity: 1; }
+        main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 2rem 6rem; }
+        .project-section { padding: 4rem 0 3rem; opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 0.05s; }
+        .section-header { display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .section-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; font-style: italic; line-height: 1; }
+        .section-label { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.35; }
+        .construction-message { background: var(--card-bg); border: 1px solid var(--border-color); padding: 3rem 2rem; text-align: center; border-radius: 0px; }
+        .construction-message p { font-size: 1.2rem; line-height: 1.6; opacity: 0.8; margin-bottom: 1rem; }
+        .construction-message p:last-child { margin-bottom: 0; }
+        .small-note { font-size: 0.85rem; opacity: 0.5; margin-top: 1rem; }
+        footer { border-top: 1px solid var(--border-color); padding: 3rem 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; flex-shrink: 0; }
+        .footer-name { font-size: 1.5rem; font-style: italic; font-weight: 400; }
+        .footer-contact { display: flex; flex-direction: column; gap: 0.5rem; text-align: right; }
+        .footer-contact a { color: var(--text-color); text-decoration: none; font-size: 0.95rem; border-bottom: 1.5px solid transparent; padding-bottom: 2px; transition: border-color 0.2s; opacity: 0.65; }
+        .footer-contact a:hover { border-bottom-color: var(--border-color); opacity: 1; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 600px) { header { padding: 0 1.2rem; } main { padding: 0 1.2rem 4rem; } .construction-message { padding: 2rem 1.2rem; } footer { padding: 2rem 1.2rem; flex-direction: column; } .footer-contact { text-align: left; } }
+    </style>
+</head>
+<body id="mainBody">
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="doc/logo.png" alt="Menu" id="toggleImage" onclick="document.getElementById('mainHeader').classList.toggle('expanded')">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html" id="nav-home">Accueil</a></li>
+                <li><a href="projets.html" id="nav-projects">Projets</a></li>
+                <li><a href="about.html" id="nav-about">À propos</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="back-bar">
+        <div class="back-bar-inner">
+            <a href="projets.html" class="back-link" id="back-link">← Projets</a>
+        </div>
+    </div>
+
+    <main>
+        <div class="project-section">
+            <div class="section-header">
+                <h2 class="section-title" id="section-title">Montages Vidéo</h2>
+                <span class="section-label">03</span>
+            </div>
+            <div class="construction-message" id="construction-message">
+                <p id="msg-line1">📽️ Cette page est en cours de développement.</p>
+                <p id="msg-line2">De nouveaux montages vidéo seront bientôt ajoutés.</p>
+                <p class="small-note" id="msg-note">Merci de votre patience ✨</p>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-name">Louis</div>
+        <div class="footer-contact">
+            <a href="mailto:louisplanardpro@gmail.com">louisplanardpro@gmail.com</a>
+            <a href="https://www.instagram.com/louis_fait_des_films" target="_blank">Instagram</a>
+        </div>
+    </footer>
+
+    <script>
+        let currentLang = 'fr';
+        const T = {
+            fr: {
+                themeDay: 'Mode nuit', themeNight: 'Mode jour',
+                navHome: 'Accueil', navProjects: 'Projets', navAbout: 'À propos',
+                backLink: '← Projets', sectionTitle: 'Montages Vidéo',
+                msgLine1: 'Cette page est en cours de développement.',
+                msgLine2: 'De nouveaux montages vidéo seront bientôt ajoutés.',
+                msgNote: 'Merci de votre patience'
+            },
+            en: {
+                themeDay: 'Dark mode', themeNight: 'Light mode',
+                navHome: 'Home', navProjects: 'Projects', navAbout: 'About',
+                backLink: '← Projects', sectionTitle: 'Video Editing',
+                msgLine1: 'This page is under development.',
+                msgLine2: 'New video edits will be added soon.',
+                msgNote: 'Thanks for your patience'
+            }
+        };
+
+        const mainBody = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon = document.querySelector('link[rel="icon"]');
+
+        function saveDarkMode(isDark) { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); }
+        function saveLang(lang) { localStorage.setItem('lang', lang); }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = T[lang];
+            document.getElementById('nav-home').textContent = t.navHome;
+            document.getElementById('nav-projects').textContent = t.navProjects;
+            document.getElementById('nav-about').textContent = t.navAbout;
+            document.getElementById('back-link').textContent = t.backLink;
+            document.getElementById('section-title').textContent = t.sectionTitle;
+            document.getElementById('msg-line1').textContent = t.msgLine1;
+            document.getElementById('msg-line2').textContent = t.msgLine2;
+            document.getElementById('msg-note').textContent = t.msgNote;
+            themeToggle.textContent = mainBody.classList.contains('dark-mode') ? t.themeNight : t.themeDay;
+            document.getElementById('lang-fr').classList.toggle('active-lang', lang === 'fr');
+            document.getElementById('lang-en').classList.toggle('active-lang', lang === 'en');
+            saveLang(lang);
+        }
+
+        function loadPreferences() {
+            const savedLang = localStorage.getItem('lang');
+            if (savedLang === 'fr' || savedLang === 'en') setLang(savedLang);
+            else setLang('fr');
+            const savedDark = localStorage.getItem('darkMode');
+            if (savedDark === 'true') {
+                mainBody.classList.add('dark-mode');
+                themeToggle.textContent = T[currentLang].themeNight;
+                const src = 'doc/logo_nuit.png';
+                toggleImage.src = src; favicon.href = src;
+            } else {
+                mainBody.classList.remove('dark-mode');
+                themeToggle.textContent = T[currentLang].themeDay;
+                const src = 'doc/logo.png';
+                toggleImage.src = src; favicon.href = src;
+            }
+        }
+
+        themeToggle.onclick = function() {
+            const isDark = mainBody.classList.toggle('dark-mode');
+            saveDarkMode(isDark);
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? 'doc/logo_nuit.png' : 'doc/logo.png';
+            toggleImage.src = src; favicon.href = src;
+        };
+
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); setLang('fr'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); setLang('en'); };
+        loadPreferences();
+    </script>
+</body>
+</html>
