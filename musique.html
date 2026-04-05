@@ -1,0 +1,752 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Louis — Musique</title>
+    <link rel="icon" href="doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <style>
+        /* Styles identiques à la version précédente (inchangés) */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { --bg-color: #f4f1e8; --text-color: #191919; --border-color: #191919; --card-bg: rgba(25,25,25,0.04); font-family: 'Radley', serif; background-color: var(--bg-color); color: var(--text-color); min-height: 100vh; display: flex; flex-direction: column; transition: background-color 0.3s, color 0.3s; }
+        body.dark-mode { --bg-color: #1a1a1a; --text-color: #f0f0f0; --border-color: #f0f0f0; --card-bg: rgba(240,240,240,0.05); }
+        header { position: sticky; top: 0; height: 120px; display: flex; align-items: center; justify-content: space-between; padding: 0 2rem; background-color: transparent; z-index: 100; transition: background-color 0.4s ease; flex-shrink: 0; }
+        header.expanded { background-color: color-mix(in srgb, var(--bg-color) 80%, transparent); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+        .logo-container { position: absolute; left: 50%; top: 25px; transform: translateX(-50%); transition: left 0.5s cubic-bezier(0.4,1.2,0.6,1), transform 0.5s cubic-bezier(0.4,1.2,0.6,1); z-index: 20; }
+        header.expanded .logo-container { left: 2rem; transform: translateX(0); }
+        #toggleImage { width: 75px; height: 75px; object-fit: contain; cursor: pointer; display: block; transition: transform 0.3s ease; outline: none; }
+        #toggleImage:hover { transform: scale(1.2) rotate(5deg); }
+        .options { opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0s 0.5s; margin-left: auto; }
+        header.expanded .options { opacity: 1; visibility: visible; transition: opacity 0.3s ease 0.1s, visibility 0s 0s; }
+        .options ul { list-style: none; display: flex; gap: 2.5rem; font-family: 'Radley', serif; font-size: 1.2rem; align-items: center; }
+        .options a, .theme-toggle { color: var(--text-color); text-decoration: none; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; font-family: 'Radley', serif; font-size: 1.2rem; outline: none; }
+        .options a:hover, .theme-toggle:hover { border-bottom: 2px solid var(--border-color); }
+        .lang-switcher { display: flex; align-items: center; gap: 0.3rem; }
+        .lang-opt { color: var(--text-color); text-decoration: none; font-family: 'Radley', serif; font-size: 1.2rem; border-bottom: 2px solid transparent; padding-bottom: 4px; transition: border-color 0.2s, opacity 0.2s; opacity: 0.35; outline: none; }
+        .lang-opt.active-lang { border-bottom: 2px solid var(--border-color); opacity: 1; }
+        .lang-opt:hover { opacity: 1; }
+        .lang-sep { opacity: 0.35; font-family: 'Radley', serif; font-size: 1.2rem; user-select: none; }
+        .back-bar { border-bottom: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent); }
+        .back-bar-inner { max-width: 860px; margin: 0 auto; padding: 0 2rem; }
+        .back-link { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.8rem 0; color: var(--text-color); text-decoration: none; font-size: 0.88rem; opacity: 0.45; transition: opacity 0.2s; outline: none; }
+        .back-link:hover { opacity: 1; }
+        main { flex: 1; max-width: 860px; width: 100%; margin: 0 auto; padding: 0 2rem 6rem; }
+        .project-section { padding: 4rem 0 3rem; opacity: 0; animation: fadeUp 0.7s ease forwards; animation-delay: 0.05s; }
+        .section-header { display: flex; align-items: baseline; gap: 1.5rem; margin-bottom: 2.5rem; }
+        .section-title { font-size: clamp(2rem, 5vw, 3.5rem); font-weight: 400; font-style: italic; line-height: 1; }
+        .section-label { font-size: 0.78rem; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.35; }
+        .album-card { display: grid; grid-template-columns: 180px 1fr; gap: 2rem; padding: 1.8rem; border: 1px solid var(--border-color); background: var(--card-bg); }
+        .album-cover { width: 180px; height: 180px; object-fit: cover; display: block; background: var(--card-bg); border: 1px solid var(--border-color); }
+        .album-cover-placeholder { width: 180px; height: 180px; background: var(--card-bg); border: 1px solid var(--border-color); display: flex; align-items: center; justify-content: center; font-size: 2rem; opacity: 0.3; }
+        .album-info { display: flex; flex-direction: column; gap: 0.6rem; justify-content: center; }
+        .album-title { font-size: 1.4rem; font-weight: 400; font-style: italic; }
+        .album-meta { font-size: 0.88rem; opacity: 0.5; }
+        .album-desc { font-size: 0.92rem; line-height: 1.65; opacity: 0.72; }
+        .player { margin-top: 1.2rem; border-top: 1px solid var(--border-color); padding-top: 1.2rem; display: flex; flex-direction: column; gap: 0.7rem; }
+        .track { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 0.8rem; padding: 0.4rem 0; border-bottom: 1px solid color-mix(in srgb, var(--border-color) 18%, transparent); cursor: pointer; transition: opacity 0.2s; }
+        .track:last-child { border-bottom: none; }
+        .track:hover { opacity: 0.7; }
+        .track.playing .track-num { display: none; }
+        .track.playing .track-play-icon { display: block !important; }
+        .track-num { font-size: 0.82rem; opacity: 0.35; text-align: center; }
+        .track-play-icon { display: none; font-size: 0.82rem; text-align: center; }
+        .track-name { font-size: 0.92rem; }
+        .track-duration { font-size: 0.82rem; opacity: 0.4; }
+        .player-controls { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.4rem; }
+        .play-btn { width: 34px; height: 34px; border-radius: 50%; border: 1.5px solid var(--border-color); background: none; color: var(--text-color); font-size: 0.85rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: background 0.2s, color 0.2s; }
+        .play-btn:hover { background: var(--text-color); color: var(--bg-color); }
+        .progress-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.3rem; }
+        .progress-bar-bg { width: 100%; height: 2px; background: color-mix(in srgb, var(--border-color) 20%, transparent); cursor: pointer; position: relative; }
+        .progress-bar-fill { height: 100%; background: var(--text-color); width: 0%; transition: width 0.3s linear; pointer-events: none; }
+        .progress-times { display: flex; justify-content: space-between; font-size: 0.72rem; opacity: 0.4; }
+        .now-playing-title { font-size: 0.82rem; opacity: 0.6; font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px; }
+        .editorial-block { display: grid; grid-template-columns: 1fr 1fr; gap: 2.5rem; align-items: center; margin-top: 2.5rem; }
+        .editorial-img { width: 100%; aspect-ratio: 4/3; object-fit: cover; display: block; background: var(--card-bg); border: 1px solid color-mix(in srgb, var(--border-color) 25%, transparent); }
+        .editorial-text { display: flex; flex-direction: column; gap: 0.8rem; }
+        .editorial-text h3 { font-size: 1.2rem; font-weight: 400; font-style: italic; }
+        .editorial-text p { font-size: 0.92rem; line-height: 1.75; opacity: 0.7; }
+        .editorial-text a { color: inherit; text-decoration: underline; opacity: 0.7; }
+        .editorial-text a:hover { opacity: 1; }
+        /* Sections albums (grilles vidéos) */
+        .videos-section { margin-top: 4rem; }
+        .videos-header { margin-bottom: 1rem; }
+        .videos-header h3 { font-size: 1.5rem; font-weight: 400; font-style: italic; }
+        .videos-intro { font-size: 0.92rem; line-height: 1.6; margin-bottom: 2rem; opacity: 0.7; }
+        .videos-intro a { color: inherit; text-decoration: underline; }
+        .videos-intro a:hover { opacity: 1; }
+        .videos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.5rem; }
+        .video-card { border: 1px solid var(--border-color); background: var(--card-bg); overflow: hidden; transition: transform 0.2s, box-shadow 0.2s; cursor: pointer; }
+        .video-card:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+        .video-poster { width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; color: white; font-size: 2.5rem; opacity: 0.5; transition: opacity 0.2s; }
+        .video-card:hover .video-poster { opacity: 0.8; }
+        .video-info { padding: 0.8rem 1rem 1rem; }
+        .video-title { font-size: 1rem; font-weight: 400; font-style: italic; margin-bottom: 0.3rem; line-height: 1.3; }
+        .video-meta { font-size: 0.75rem; opacity: 0.5; }
+        /* Lecteur vidéo personnalisé (identique) */
+        .video-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none; align-items: center; justify-content: center; z-index: 9999; }
+        .video-overlay.active { display: flex; }
+        .overlay-inner { position: relative; width: min(90%, 1000px); background: #000; border-radius: 8px; overflow: hidden; outline: none; }
+        .video-container { position: relative; width: 100%; background: #000; }
+        .vimeo-player { width: 100%; aspect-ratio: 16/9; background: #000; border: 0; outline: none; }
+        .video-click-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent; cursor: pointer; z-index: 5; }
+        .custom-controls { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); color: white; font-family: 'Radley', serif; position: relative; z-index: 10; }
+        .custom-controls button { background: none; border: none; color: white; font-size: 1.2rem; cursor: pointer; padding: 0.2rem 0.5rem; border-radius: 4px; transition: background 0.2s; font-family: 'Radley', serif; outline: none; }
+        .custom-controls button:hover { background: rgba(255,255,255,0.2); }
+        .progress-bar { flex: 1; height: 5px; background: color-mix(in srgb, var(--border-color) 30%, transparent); border-radius: 5px; cursor: pointer; position: relative; }
+        .progress-filled { height: 100%; width: 0%; background: var(--text-color); border-radius: 5px; opacity: 0.8; }
+        .time-display { font-size: 0.85rem; font-family: inherit; }
+        footer { border-top: 1px solid var(--border-color); padding: 3rem 2.5rem; display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem; flex-shrink: 0; }
+        .footer-name { font-size: 1.5rem; font-style: italic; font-weight: 400; }
+        .footer-contact { display: flex; flex-direction: column; gap: 0.5rem; text-align: right; }
+        .footer-contact a { color: var(--text-color); text-decoration: none; font-size: 0.95rem; border-bottom: 1.5px solid transparent; padding-bottom: 2px; transition: border-color 0.2s; opacity: 0.65; outline: none; }
+        .footer-contact a:hover { border-bottom-color: var(--border-color); opacity: 1; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @media (max-width: 600px) {
+            header { padding: 0 1.2rem; } main { padding: 0 1.2rem 4rem; }
+            .album-card { grid-template-columns: 1fr; }
+            .album-cover, .album-cover-placeholder { width: 100%; height: 180px; }
+            .editorial-block { grid-template-columns: 1fr; }
+            .videos-section { margin-top: 2rem; }
+            .videos-grid { grid-template-columns: 1fr; }
+            footer { padding: 2rem 1.2rem; flex-direction: column; } .footer-contact { text-align: left; }
+            .custom-controls { gap: 0.5rem; padding: 0.5rem; }
+            .custom-controls button { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+    <header id="mainHeader">
+        <div class="logo-container">
+            <img src="doc/logo.png" alt="Menu" id="toggleImage" onclick="toggleHeader()">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html" id="nav-home">Accueil</a></li>
+                <li><a href="projets.html" id="nav-projects">Projets</a></li>
+                <li><a href="about.html" id="nav-about">À propos</a></li>
+                <li><a href="musique.html" id="nav-music">Musique</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <div class="back-bar">
+        <div class="back-bar-inner">
+            <a href="projets.html" class="back-link" id="back-link">← Projets</a>
+        </div>
+    </div>
+
+    <main>
+        <div class="project-section">
+            <div class="section-header">
+                <h2 class="section-title" id="section-title">Musique</h2>
+                <span class="section-label">01</span>
+            </div>
+            <div class="album-card">
+                <img src="doc/me_playing_guitar.png" alt="Pochette" class="album-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                <div class="album-cover-placeholder" style="display:none">♪</div>
+                <div class="album-info">
+                    <div class="album-title" id="album-title">Projets</div>
+                    <div class="album-meta" id="album-meta">Depuis 2021 · Rock / Metal / Soft</div>
+                    <div class="album-desc" id="album-desc">Quelques maquettes de chansons en cours de développement.</div>
+                    <div class="player">
+                        <div class="track" data-src="doc/audio/titre_1.wav" onclick="selectTrack(this)">
+                            <span class="track-num">1</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 1</span><span class="track-duration">1:47</span>
+                        </div>
+                        <div class="track" data-src="doc/audio/titre_2.wav" data-offset="6" onclick="selectTrack(this)">
+                            <span class="track-num">2</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 2</span><span class="track-duration">1:49</span>
+                        </div>
+                        <div class="track" data-src="doc/audio/titre_3.wav" data-end="35" onclick="selectTrack(this)">
+                            <span class="track-num">3</span><span class="track-play-icon">▶</span>
+                            <span class="track-name">Morceau 3</span><span class="track-duration">0:35</span>
+                        </div>
+                        <div class="player-controls">
+                            <button class="play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+                            <div class="progress-wrap">
+                                <div class="progress-bar-bg" id="progressBg" onclick="seekTo(event)">
+                                    <div class="progress-bar-fill" id="progressFill"></div>
+                                </div>
+                                <div class="progress-times">
+                                    <span id="timeElapsed">0:00</span>
+                                    <span id="nowPlayingTitle" class="now-playing-title">—</span>
+                                    <span id="timeDuration">0:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="editorial-block">
+                <img src="doc/lucas_et_moi.jpg" alt="" class="editorial-img" onerror="this.style.background='var(--card-bg)'; this.removeAttribute('src');">
+                <div class="editorial-text">
+                    <h3 id="editorial-title">Punch</h3>
+                    <p id="editorial-text">Depuis 2021, Punch écrit et compose des morceaux de Rock / Métal. Le projet naît d'une amitié entre deux musiciens et d'une passion commune pour le rock. Nous avons eu l'occasion de nous produire sur des petites scènes du Valenciennois et souhaitons dorénavant concrétiser notre projet en nous élargissant à de nouveaux styles et à de nouveaux membres. Alors si tu es musicien et que tu souhaiterais jouer avec nous, n'hésite pas à <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">nous contacter</a> !</p>
+                </div>
+            </div>
+
+            <!-- === ALBUM 1 : Fête de la Musique à Valenciennes (avec Punch & Trionauts) === -->
+            <div class="videos-section">
+                <div class="videos-header">
+                    <h3 id="videosTitle1">Fête de la Musique à Valenciennes</h3>
+                </div>
+                <div class="videos-intro" id="videosIntro1">Nous avons partagé la scène avec <a href="https://www.facebook.com/Trionauts/" target="_blank" rel="noopener noreferrer">Trionauts</a> – voici quelques extraits capturés par le public. Merci à tous pour votre énergie !</div>
+                <div class="videos-grid" id="videosGrid1">
+                    <div class="video-card" onclick="openVideoPlayer('1180151361')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">My Own Summer (Deftones)</div>
+                            <div class="video-meta">Valenciennes, Place d’Armes · 2025</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180149284')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Smells Like Teen Spirit (Nirvana)</div>
+                            <div class="video-meta">Valenciennes, Place d’Armes · 2025</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180151373')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Killing in the Name (Rage Against the Machine)</div>
+                            <div class="video-meta">Valenciennes, Place d’Armes · 2025</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180151374')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Zombie (The Cranberries)</div>
+                            <div class="video-meta">Valenciennes, Place d’Armes · 2025</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180149271')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Down With the Sickness (Disturbed)</div>
+                            <div class="video-meta">Valenciennes, Place d’Armes · 2025</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === ALBUM 2 : Premier concert (Coyote Café) === -->
+            <div class="videos-section">
+                <div class="videos-header">
+                    <h3 id="videosTitle2">Premier concert – Coyote Café</h3>
+                </div>
+                <div class="videos-intro" id="videosIntro2">Mon tout premier concert, une étape mémorable à Valenciennes.</div>
+                <div class="videos-grid" id="videosGrid2">
+                    <div class="video-card" onclick="openVideoPlayer('1180149266')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Premier concert au Coyote Café</div>
+                            <div class="video-meta">Valenciennes · 2023</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === ALBUM 3 : IRL (groupe précédent) === -->
+            <div class="videos-section">
+                <div class="videos-header">
+                    <h3 id="videosTitle3">IRL</h3>
+                </div>
+                <div class="videos-intro" id="videosIntro3">Découvrez mon ancien groupe <a href="https://www.instagram.com/irloff/" target="_blank" rel="noopener noreferrer">IRL</a> – Fête de la Musique 2023.</div>
+                <div class="videos-grid" id="videosGrid3">
+                    <div class="video-card" onclick="openVideoPlayer('1180149277')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">IRL à la Fête de la Musique</div>
+                            <div class="video-meta">Valenciennes · 2023</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- === ALBUM 4 : Répétitions === -->
+            <div class="videos-section">
+                <div class="videos-header">
+                    <h3 id="videosTitle4">Répétitions</h3>
+                </div>
+                <div class="videos-intro" id="videosIntro4">Quelques moments de travail en studio / répétitions.</div>
+                <div class="videos-grid" id="videosGrid4">
+                    <div class="video-card" onclick="openVideoPlayer('1180151362')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Répétition 1</div>
+                            <div class="video-meta">Studio</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180151364')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Répétition 2</div>
+                            <div class="video-meta">Studio</div>
+                        </div>
+                    </div>
+                    <div class="video-card" onclick="openVideoPlayer('1180151371')">
+                        <div class="video-poster">▶</div>
+                        <div class="video-info">
+                            <div class="video-title">Répétition 3</div>
+                            <div class="video-meta">Studio</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- Overlay vidéo personnalisé -->
+    <div id="videoOverlay" class="video-overlay" onclick="closeVideoOverlay(event)">
+        <div class="overlay-inner" onclick="event.stopPropagation()">
+            <div class="video-container">
+                <div id="vimeoPlayer" class="vimeo-player"></div>
+                <div class="video-click-overlay" id="videoClickOverlay"></div>
+                <div class="custom-controls">
+                    <button id="playPauseBtn" aria-label="Lecture/Pause">►</button>
+                    <div class="progress-bar" id="progressBarVideo">
+                        <div class="progress-filled" id="progressFilledVideo"></div>
+                    </div>
+                    <span class="time-display" id="timeDisplayVideo">0:00 / 0:00</span>
+                    <button id="fullscreenBtn" aria-label="Plein écran">⤢</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-name">Louis</div>
+        <div class="footer-contact">
+            <a href="mailto:louisplanardpro@gmail.com">louisplanardpro@gmail.com</a>
+            <a href="https://www.instagram.com/louis_fait_des_films" target="_blank">Instagram</a>
+        </div>
+    </footer>
+
+    <audio id="audioPlayer"></audio>
+
+    <script>
+        // === GESTION DU HEADER ===
+        const header = document.getElementById('mainHeader');
+        function saveHeaderState() { localStorage.setItem('headerExpanded', header.classList.contains('expanded') ? 'true' : 'false'); }
+        function loadHeaderState() {
+            const saved = localStorage.getItem('headerExpanded');
+            if (saved === 'true') header.classList.add('expanded');
+            else header.classList.remove('expanded');
+        }
+        function toggleHeader() { header.classList.toggle('expanded'); saveHeaderState(); }
+
+        // === TRADUCTIONS (avec tous les nouveaux albums) ===
+        const T = {
+            fr: {
+                themeDay: 'Mode nuit', themeNight: 'Mode jour',
+                navHome: 'Accueil', navProjects: 'Projets', navAbout: 'À propos', navMusic: 'Musique',
+                backLink: '← Projets',
+                sectionTitle: 'Musique',
+                albumTitle: 'Projets',
+                albumMeta: 'Depuis 2021 · Rock / Metal / Soft',
+                albumDesc: 'Quelques maquettes de chansons en cours de développement.',
+                editorialTitle: 'Punch',
+                editorialText: 'Depuis 2021, Punch écrit et compose des morceaux de Rock / Métal. Le projet naît d\'une amitié entre deux musiciens et d\'une passion commune pour le rock. Nous avons eu l\'occasion de nous produire sur des petites scènes du Valenciennois et souhaitons dorénavant concrétiser notre projet en nous élargissant à de nouveaux styles et à de nouveaux membres. Alors si tu es musicien et que tu souhaiterais jouer avec nous, n\'hésite pas à <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">nous contacter</a> !',
+                videosTitle1: 'Fête de la Musique à Valenciennes',
+                videosIntro1: 'Nous avons partagé la scène avec <a href="https://www.facebook.com/Trionauts/" target="_blank" rel="noopener noreferrer">Trionauts</a> – voici quelques extraits capturés par le public. Merci à tous pour votre énergie !',
+                videosTitle2: 'Premier concert – Coyote Café',
+                videosIntro2: 'Mon tout premier concert, une étape mémorable à Valenciennes.',
+                videosTitle3: 'IRL',
+                videosIntro3: 'Découvrez mon ancien groupe <a href="https://www.instagram.com/irloff/" target="_blank" rel="noopener noreferrer">IRL</a> – Fête de la Musique 2023.',
+                videosTitle4: 'Répétitions',
+                videosIntro4: 'Quelques moments de travail en studio / répétitions.',
+                video1Title: 'My Own Summer (Deftones)',
+                video2Title: 'Smells Like Teen Spirit (Nirvana)',
+                video3Title: 'Killing in the Name (Rage Against the Machine)',
+                video4Title: 'Zombie (The Cranberries)',
+                video5Title: 'Down With the Sickness (Disturbed)',
+                video6Title: 'Premier concert au Coyote Café',
+                video7Title: 'IRL à la Fête de la Musique',
+                video8Title: 'Répétition 1',
+                video9Title: 'Répétition 2',
+                video10Title: 'Répétition 3',
+                metaVal: 'Valenciennes, Place d’Armes · 2025',
+                metaCoyote: 'Valenciennes · 2023',
+                metaIRL: 'Valenciennes · 2023',
+                metaRep: 'Studio'
+            },
+            en: {
+                themeDay: 'Dark mode', themeNight: 'Light mode',
+                navHome: 'Home', navProjects: 'Projects', navAbout: 'About', navMusic: 'Music',
+                backLink: '← Projects',
+                sectionTitle: 'Music',
+                albumTitle: 'Projects',
+                albumMeta: 'Since 2021 · Rock / Metal / Soft',
+                albumDesc: 'A few song demos currently in development.',
+                editorialTitle: 'Punch',
+                editorialText: 'Since 2021, Punch has been writing and composing Rock and Metal music. The project started from a friendship between two musicians and a shared love for rock. We\'ve performed on small stages around the Valenciennois area, and now we\'re ready to take the project further by exploring new styles and bringing in new members. So if you\'re a musician interested in playing with us, don\'t hesitate to <a href="https://www.instagram.com/punch_groupe/" target="_blank" rel="noopener noreferrer">contact us</a>!',
+                videosTitle1: 'Music Festival in Valenciennes',
+                videosIntro1: 'We shared the stage with <a href="https://www.facebook.com/Trionauts/" target="_blank" rel="noopener noreferrer">Trionauts</a> – here are a few clips captured by the audience. Thank you all for your energy!',
+                videosTitle2: 'First concert – Coyote Café',
+                videosIntro2: 'My very first concert, a memorable milestone in Valenciennes.',
+                videosTitle3: 'IRL',
+                videosIntro3: 'Check out my former band <a href="https://www.instagram.com/irloff/" target="_blank" rel="noopener noreferrer">IRL</a> – Music Festival 2023.',
+                videosTitle4: 'Rehearsals',
+                videosIntro4: 'Some studio / rehearsal moments.',
+                video1Title: 'My Own Summer (Deftones)',
+                video2Title: 'Smells Like Teen Spirit (Nirvana)',
+                video3Title: 'Killing in the Name (Rage Against the Machine)',
+                video4Title: 'Zombie (The Cranberries)',
+                video5Title: 'Down With the Sickness (Disturbed)',
+                video6Title: 'First concert at Coyote Café',
+                video7Title: 'IRL at the Music Festival',
+                video8Title: 'Rehearsal 1',
+                video9Title: 'Rehearsal 2',
+                video10Title: 'Rehearsal 3',
+                metaVal: 'Valenciennes, Place d’Armes · 2025',
+                metaCoyote: 'Valenciennes · 2023',
+                metaIRL: 'Valenciennes · 2023',
+                metaRep: 'Studio'
+            }
+        };
+
+        // === LECTEUR VIDÉO PERSONNALISÉ ===
+        let currentVideoPlayer = null;
+        let videoProgressInterval = null;
+
+        const videoOverlay = document.getElementById('videoOverlay');
+        const vimeoPlayerDiv = document.getElementById('vimeoPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progressBarVideo = document.getElementById('progressBarVideo');
+        const progressFilledVideo = document.getElementById('progressFilledVideo');
+        const timeDisplayVideo = document.getElementById('timeDisplayVideo');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const videoClickOverlay = document.getElementById('videoClickOverlay');
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function updateVideoProgress() {
+            if (currentVideoPlayer) {
+                currentVideoPlayer.getCurrentTime().then(seconds => {
+                    currentVideoPlayer.getDuration().then(duration => {
+                        const percent = (seconds / duration) * 100;
+                        progressFilledVideo.style.width = `${percent}%`;
+                        timeDisplayVideo.textContent = `${formatTime(seconds)} / ${formatTime(duration)}`;
+                    });
+                }).catch(e => console.log("Erreur temps", e));
+            }
+        }
+
+        function stopVideoProgressInterval() { if (videoProgressInterval) { clearInterval(videoProgressInterval); videoProgressInterval = null; } }
+        function startVideoProgressUpdates() { stopVideoProgressInterval(); videoProgressInterval = setInterval(updateVideoProgress, 500); }
+
+        function toggleVideoPlayPause() {
+            if (currentVideoPlayer) {
+                currentVideoPlayer.getPaused().then(paused => {
+                    if (paused) currentVideoPlayer.play();
+                    else currentVideoPlayer.pause();
+                });
+            }
+        }
+
+        function initVideoPlayer(videoId) {
+            if (currentVideoPlayer) {
+                stopVideoProgressInterval();
+                currentVideoPlayer.destroy().catch(e => console.log("Destroy error", e));
+                currentVideoPlayer = null;
+            }
+            vimeoPlayerDiv.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('src', `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479&loop=0&autoplay=0&muted=0&controls=0&portrait=0&byline=0&title=0`);
+            iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.classList.add('vimeo-player');
+            iframe.style.width = '100%';
+            iframe.style.height = '100%';
+            vimeoPlayerDiv.appendChild(iframe);
+            const container = document.querySelector('.video-container');
+            let clickOverlay = document.getElementById('videoClickOverlay');
+            if (!clickOverlay) {
+                clickOverlay = document.createElement('div');
+                clickOverlay.id = 'videoClickOverlay';
+                clickOverlay.className = 'video-click-overlay';
+                container.appendChild(clickOverlay);
+            }
+            document.getElementById('videoClickOverlay').onclick = toggleVideoPlayPause;
+
+            currentVideoPlayer = new Vimeo.Player(iframe);
+            currentVideoPlayer.ready().then(() => {
+                currentVideoPlayer.getPaused().then(paused => {
+                    playPauseBtn.textContent = paused ? '►' : '❚❚';
+                });
+                currentVideoPlayer.on('play', () => { playPauseBtn.textContent = '❚❚'; startVideoProgressUpdates(); });
+                currentVideoPlayer.on('pause', () => { playPauseBtn.textContent = '►'; stopVideoProgressInterval(); });
+                currentVideoPlayer.on('ended', () => {
+                    playPauseBtn.textContent = '►';
+                    stopVideoProgressInterval();
+                    progressFilledVideo.style.width = '0%';
+                    timeDisplayVideo.textContent = '0:00 / 0:00';
+                });
+                currentVideoPlayer.on('timeupdate', updateVideoProgress);
+                updateVideoProgress();
+                startVideoProgressUpdates();
+            }).catch(err => console.log("Erreur init Vimeo", err));
+        }
+
+        function openVideoPlayer(videoId) {
+            initVideoPlayer(videoId);
+            videoOverlay.classList.add('active');
+        }
+
+        function closeVideoOverlay(e) {
+            if (e) e.preventDefault();
+            stopVideoProgressInterval();
+            if (currentVideoPlayer) { currentVideoPlayer.destroy().catch(()=>{}); currentVideoPlayer = null; }
+            vimeoPlayerDiv.innerHTML = '';
+            videoOverlay.classList.remove('active');
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (!videoOverlay.classList.contains('active')) return;
+            if (!currentVideoPlayer) return;
+            if (e.code === 'Space') { e.preventDefault(); toggleVideoPlayPause(); return; }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+            if (e.key === 'ArrowLeft') {
+                currentVideoPlayer.getCurrentTime().then(current => currentVideoPlayer.setCurrentTime(Math.max(0, current - 5)));
+            } else if (e.key === 'ArrowRight') {
+                currentVideoPlayer.getDuration().then(duration => {
+                    currentVideoPlayer.getCurrentTime().then(current => currentVideoPlayer.setCurrentTime(Math.min(duration, current + 5)));
+                });
+            } else if (e.key === 'Escape') { e.preventDefault(); closeVideoOverlay(); }
+        });
+
+        playPauseBtn.onclick = toggleVideoPlayPause;
+        videoClickOverlay.onclick = toggleVideoPlayPause;
+        progressBarVideo.onclick = (e) => {
+            if (currentVideoPlayer) {
+                const rect = progressBarVideo.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                currentVideoPlayer.getDuration().then(duration => currentVideoPlayer.setCurrentTime(duration * percent));
+            }
+        };
+        fullscreenBtn.onclick = () => {
+            const container = document.querySelector('.overlay-inner');
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+                else if (container.msRequestFullscreen) container.msRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+            }
+        };
+        function updateFullscreenIcon() {
+            fullscreenBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '⤬' : '⤢';
+        }
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+
+        // === LECTEUR AUDIO (existant) ===
+        const audio = document.getElementById('audioPlayer');
+        const playBtn = document.getElementById('playBtn');
+        const progressFill = document.getElementById('progressFill');
+        const progressBg = document.getElementById('progressBg');
+        const timeElapsed = document.getElementById('timeElapsed');
+        const timeDuration = document.getElementById('timeDuration');
+        const nowPlaying = document.getElementById('nowPlayingTitle');
+        let currentTrackEl = null;
+
+        function fmt(s) { if (isNaN(s)) return '0:00'; return Math.floor(s/60) + ':' + String(Math.floor(s%60)).padStart(2,'0'); }
+
+        function selectTrack(el) {
+            document.querySelectorAll('.track').forEach(function(t) { t.classList.remove('playing'); });
+            el.classList.add('playing'); currentTrackEl = el;
+            audio.src = el.dataset.src;
+            nowPlaying.textContent = el.querySelector('.track-name').textContent;
+            var offset = parseFloat(el.dataset.offset) || 0;
+            audio.play().then(function() { if (offset > 0) audio.currentTime = offset; playBtn.textContent = '‖'; }).catch(function(){});
+        }
+
+        function togglePlay() {
+            if (!currentTrackEl) { var first = document.querySelector('.track'); if (first) selectTrack(first); return; }
+            if (audio.paused) { audio.play(); playBtn.textContent = '‖'; }
+            else { audio.pause(); playBtn.textContent = '▶'; }
+        }
+
+        function seekTo(e) {
+            if (!audio.duration) return;
+            var rect = progressBg.getBoundingClientRect();
+            var startAt = currentTrackEl ? (parseFloat(currentTrackEl.dataset.offset) || 0) : 0;
+            var endAt = currentTrackEl ? parseFloat(currentTrackEl.dataset.end) : NaN;
+            var effectiveDuration = !isNaN(endAt) ? (endAt - startAt) : (audio.duration - startAt);
+            audio.currentTime = startAt + ((e.clientX - rect.left) / rect.width) * effectiveDuration;
+        }
+
+        audio.addEventListener('timeupdate', function() {
+            if (!audio.duration) return;
+            if (currentTrackEl) {
+                var endAt = parseFloat(currentTrackEl.dataset.end);
+                if (!isNaN(endAt) && audio.currentTime >= endAt) {
+                    audio.pause(); audio.currentTime = parseFloat(currentTrackEl.dataset.offset) || 0;
+                    playBtn.textContent = '▶'; progressFill.style.width = '0%'; timeElapsed.textContent = '0:00';
+                    var tracks = Array.from(document.querySelectorAll('.track'));
+                    var idx = tracks.indexOf(currentTrackEl);
+                    currentTrackEl.classList.remove('playing');
+                    if (idx < tracks.length - 1) selectTrack(tracks[idx + 1]);
+                    return;
+                }
+            }
+            var startAt = currentTrackEl ? (parseFloat(currentTrackEl.dataset.offset) || 0) : 0;
+            var endAt2 = currentTrackEl ? parseFloat(currentTrackEl.dataset.end) : NaN;
+            var effectiveDuration = !isNaN(endAt2) ? (endAt2 - startAt) : (audio.duration - startAt);
+            var elapsed = audio.currentTime - startAt;
+            progressFill.style.width = Math.max(0, Math.min(1, elapsed / effectiveDuration)) * 100 + '%';
+            timeElapsed.textContent = fmt(Math.max(0, elapsed));
+            timeDuration.textContent = fmt(effectiveDuration);
+        });
+
+        audio.addEventListener('ended', function() {
+            playBtn.textContent = '▶'; progressFill.style.width = '0%';
+            var tracks = Array.from(document.querySelectorAll('.track'));
+            var idx = tracks.indexOf(currentTrackEl);
+            if (currentTrackEl) currentTrackEl.classList.remove('playing');
+            if (idx >= 0 && idx < tracks.length - 1) selectTrack(tracks[idx + 1]);
+        });
+
+        document.querySelectorAll('.track').forEach(function(t) {
+            var tmp = new Audio(t.dataset.src);
+            tmp.addEventListener('loadedmetadata', function() {
+                var endAt = parseFloat(t.dataset.end), startAt = parseFloat(t.dataset.offset) || 0;
+                t.querySelector('.track-duration').textContent = !isNaN(endAt) ? fmt(endAt - startAt) : fmt(tmp.duration - startAt);
+            });
+        });
+
+        // === CHARGEMENT DES PRÉFÉRENCES (langue, thème, header) ===
+        const mainBody = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon = document.querySelector('link[rel="icon"]');
+
+        function saveDarkMode(isDark) { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); }
+        function saveLang(lang) { localStorage.setItem('lang', lang); }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = T[lang];
+            document.getElementById('nav-home').textContent = t.navHome;
+            document.getElementById('nav-projects').textContent = t.navProjects;
+            document.getElementById('nav-about').textContent = t.navAbout;
+            document.getElementById('nav-music').textContent = t.navMusic;
+            document.getElementById('back-link').textContent = t.backLink;
+            document.getElementById('section-title').textContent = t.sectionTitle;
+            document.getElementById('album-title').textContent = t.albumTitle;
+            document.getElementById('album-meta').textContent = t.albumMeta;
+            document.getElementById('album-desc').textContent = t.albumDesc;
+            document.getElementById('editorial-title').textContent = t.editorialTitle;
+            document.getElementById('editorial-text').innerHTML = t.editorialText;
+
+            // Albums textes
+            document.getElementById('videosTitle1').textContent = t.videosTitle1;
+            document.getElementById('videosIntro1').innerHTML = t.videosIntro1;
+            document.getElementById('videosTitle2').textContent = t.videosTitle2;
+            document.getElementById('videosIntro2').textContent = t.videosIntro2;
+            document.getElementById('videosTitle3').textContent = t.videosTitle3;
+            document.getElementById('videosIntro3').innerHTML = t.videosIntro3;
+            document.getElementById('videosTitle4').textContent = t.videosTitle4;
+            document.getElementById('videosIntro4').textContent = t.videosIntro4;
+
+            // Grille 1 (5 vidéos)
+            const grid1 = document.querySelectorAll('#videosGrid1 .video-card');
+            if (grid1.length >= 5) {
+                grid1[0].querySelector('.video-title').textContent = t.video1Title;
+                grid1[1].querySelector('.video-title').textContent = t.video2Title;
+                grid1[2].querySelector('.video-title').textContent = t.video3Title;
+                grid1[3].querySelector('.video-title').textContent = t.video4Title;
+                grid1[4].querySelector('.video-title').textContent = t.video5Title;
+                for (let i = 0; i < 5; i++) grid1[i].querySelector('.video-meta').textContent = t.metaVal;
+            }
+            // Grille 2 (1 vidéo)
+            const grid2 = document.querySelector('#videosGrid2 .video-card');
+            if (grid2) {
+                grid2.querySelector('.video-title').textContent = t.video6Title;
+                grid2.querySelector('.video-meta').textContent = t.metaCoyote;
+            }
+            // Grille 3 (1 vidéo)
+            const grid3 = document.querySelector('#videosGrid3 .video-card');
+            if (grid3) {
+                grid3.querySelector('.video-title').textContent = t.video7Title;
+                grid3.querySelector('.video-meta').textContent = t.metaIRL;
+            }
+            // Grille 4 (3 vidéos)
+            const grid4 = document.querySelectorAll('#videosGrid4 .video-card');
+            if (grid4.length >= 3) {
+                grid4[0].querySelector('.video-title').textContent = t.video8Title;
+                grid4[1].querySelector('.video-title').textContent = t.video9Title;
+                grid4[2].querySelector('.video-title').textContent = t.video10Title;
+                for (let i = 0; i < 3; i++) grid4[i].querySelector('.video-meta').textContent = t.metaRep;
+            }
+
+            themeToggle.textContent = mainBody.classList.contains('dark-mode') ? t.themeNight : t.themeDay;
+            document.getElementById('lang-fr').classList.toggle('active-lang', lang === 'fr');
+            document.getElementById('lang-en').classList.toggle('active-lang', lang === 'en');
+            saveLang(lang);
+        }
+
+        function loadPreferences() {
+            const savedLang = localStorage.getItem('lang');
+            if (savedLang === 'fr' || savedLang === 'en') setLang(savedLang);
+            else setLang('fr');
+            const savedDark = localStorage.getItem('darkMode');
+            if (savedDark === 'true') {
+                mainBody.classList.add('dark-mode');
+                themeToggle.textContent = T[currentLang].themeNight;
+                toggleImage.src = 'doc/logo_nuit.png';
+                favicon.href = 'doc/logo_nuit.png';
+            } else {
+                mainBody.classList.remove('dark-mode');
+                themeToggle.textContent = T[currentLang].themeDay;
+                toggleImage.src = 'doc/logo.png';
+                favicon.href = 'doc/logo.png';
+            }
+        }
+
+        themeToggle.onclick = function() {
+            const isDark = mainBody.classList.toggle('dark-mode');
+            saveDarkMode(isDark);
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? 'doc/logo_nuit.png' : 'doc/logo.png';
+            toggleImage.src = src;
+            favicon.href = src;
+        };
+
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); setLang('fr'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); setLang('en'); };
+
+        let currentLang = 'fr';
+        loadPreferences();
+        loadHeaderState();
+
+        window.openVideoPlayer = openVideoPlayer;
+        window.closeVideoOverlay = closeVideoOverlay;
+        window.toggleHeader = toggleHeader;
+        window.selectTrack = selectTrack;
+        window.togglePlay = togglePlay;
+        window.seekTo = seekTo;
+    </script>
+</body>
+</html>
