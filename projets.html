@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Louis — Projets</title>
+    <link rel="icon" href="./doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <style>
+        /* ===== VARIABLES & BASE (harmonisées avec films.html) ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            --bg-color: #f4f1e8;
+            --text-color: #191919;
+            --border-color: #191919;
+            --card-bg: rgba(25, 25, 25, 0.04);
+            --modal-bg: #ffffff;
+            --modal-text: #191919;
+            --modal-border: rgba(25, 25, 25, 0.2);
+            --btn-bg: #9c481a;
+            --btn-text: #f4f1e8;
+            font-family: 'Radley', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --border-color: #f0f0f0;
+            --card-bg: rgba(240, 240, 240, 0.05);
+            --modal-bg: #2a2a2a;
+            --modal-text: #f0f0f0;
+            --modal-border: rgba(240, 240, 240, 0.2);
+            --btn-bg: #f0f0f0;
+            --btn-text: #1a1a1a;
+        }
+
+        /* ===== HEADER (toggle, sans arrondi, fine ligne quand expansé) ===== */
+        header {
+            position: relative;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            background-color: transparent;
+            z-index: 10;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            flex-shrink: 0;
+            border-radius: 0 !important;
+        }
+        header.expanded {
+            background-color: color-mix(in srgb, var(--bg-color) 92%, transparent);
+            backdrop-filter: blur(12px);
+            border-radius: 0 !important;
+        }
+        header.expanded::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 5%;
+            width: 90%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border-color) 25%, transparent), transparent);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .logo-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: left 0.5s cubic-bezier(0.4, 1.2, 0.6, 1), transform 0.5s cubic-bezier(0.4, 1.2, 0.6, 1);
+            z-index: 20;
+            line-height: 0;
+        }
+        header.expanded .logo-container {
+            left: 2rem;
+            transform: translate(0, -50%);
+        }
+        #toggleImage {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border-radius: 12px;
+            display: block;
+        }
+        #toggleImage:hover { transform: scale(1.05) rotate(3deg); }
+
+        .options {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0s 0.3s;
+            margin-left: auto;
+        }
+        header.expanded .options {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.25s ease 0.05s, visibility 0s 0s;
+        }
+        .options ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        .options li {
+            display: inline-block;
+            line-height: 1;
+        }
+        .options a, .theme-toggle {
+            color: var(--text-color);
+            text-decoration: none;
+            font-family: 'Radley', serif;
+            font-size: 1.1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1.5px solid transparent;
+            transition: border-color 0.2s, opacity 0.2s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            display: inline-block;
+            line-height: 1.2;
+        }
+        .options a:hover, .theme-toggle:hover {
+            border-bottom-color: var(--border-color);
+        }
+
+        .lang-switcher {
+            display: flex;
+            align-items: baseline;
+            gap: 0.3rem;
+        }
+        .lang-opt {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 0.2rem 0;
+            border-bottom: 1.5px solid transparent;
+            opacity: 0.5;
+            transition: opacity 0.2s, border-color 0.2s;
+        }
+        .lang-opt.active-lang {
+            border-bottom-color: var(--border-color);
+            opacity: 1;
+        }
+        .lang-opt:hover {
+            opacity: 1;
+        }
+        .lang-sep {
+            opacity: 0.4;
+            font-size: 1rem;
+            user-select: none;
+        }
+
+        /* ===== MAIN ===== */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 2rem 5rem;
+        }
+        .hub-header {
+            margin-bottom: 3rem;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+            animation-delay: 0.05s;
+        }
+        .hub-title {
+            font-size: clamp(2.5rem, 6vw, 4.5rem);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+        .hub-subtitle {
+            font-size: 0.9rem;
+            opacity: 0.4;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        /* ===== GRILLE DES CARTES (titres centrés, sans contenu superflu) ===== */
+        .hub-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem 1.5rem;
+        }
+        .hub-card {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            color: var(--text-color);
+            border: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent);
+            background: var(--card-bg);
+            padding: 3rem 2rem;
+            position: relative;
+            transition: transform 0.25s ease, background 0.25s ease, box-shadow 0.2s;
+            border-radius: 20px;
+            text-align: center;
+            opacity: 0;
+            animation: fadeUp 0.6s ease forwards;
+        }
+        .hub-card:nth-child(1) { animation-delay: 0.1s; }
+        .hub-card:nth-child(2) { animation-delay: 0.15s; }
+        .hub-card:nth-child(3) { animation-delay: 0.2s; }
+        .hub-card:nth-child(4) { animation-delay: 0.25s; }
+        .hub-card:hover {
+            transform: scale(1.02);
+            background: color-mix(in srgb, var(--border-color) 6%, transparent);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+        .hub-card-title {
+            font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1.2;
+        }
+        /* Suppression des anciens styles d'éléments inutiles */
+        .hub-card-num, .hub-card-desc, .hub-card-arrow, .hub-card-tags {
+            display: none;
+        }
+
+        /* ===== FOOTER (harmonisé) ===== */
+        footer {
+            border-top: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent);
+            padding: 3rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 2rem;
+            border-radius: 16px 16px 0 0;
+            background: var(--card-bg);
+        }
+        .footer-name { font-size: 1.5rem; font-style: italic; }
+        .footer-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: right;
+        }
+        .footer-contact a {
+            color: var(--text-color);
+            text-decoration: none;
+            border-bottom: 1.5px solid transparent;
+            opacity: 0.65;
+            transition: 0.2s;
+        }
+        .footer-contact a:hover {
+            border-bottom-color: var(--border-color);
+            opacity: 1;
+        }
+
+        /* ===== KEYFRAMES ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            header { height: 80px; padding: 0 1rem; }
+            .logo-container { top: 50%; }
+            #toggleImage { width: 55px; height: 55px; }
+            header.expanded .logo-container { left: 1rem; }
+            .options ul { gap: 1.2rem; }
+            .options a, .theme-toggle { font-size: 1rem; }
+            .lang-opt, .lang-sep { font-size: 0.9rem; }
+            main { padding: 1.5rem 1rem 3rem; }
+            .hub-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .hub-card { padding: 2rem 1.5rem; }
+            .hub-card-title { font-size: 1.4rem; }
+            footer { border-radius: 12px 12px 0 0; padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="./doc/logo.png" alt="Menu" id="toggleImage">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html" id="nav-home">Accueil</a></li>
+                <li><a href="blog.html" id="nav-blog">Blog</a></li>
+                <li><a href="about.html" id="nav-about">À propos</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="hub-header">
+            <h1 class="hub-title" id="hub-title">Projets</h1>
+            <p class="hub-subtitle" id="hub-subtitle">Musique · Théâtre · Vidéo · Cinéma</p>
+        </div>
+        <div class="hub-grid">
+            <a href="musique.html" class="hub-card">
+                <div class="hub-card-title" id="card-title-1">Musique</div>
+            </a>
+            <a href="theatre.html" class="hub-card">
+                <div class="hub-card-title" id="card-title-2">Théâtre</div>
+            </a>
+            <a href="montages.html" class="hub-card">
+                <div class="hub-card-title" id="card-title-3">Montages Vidéo</div>
+            </a>
+            <a href="films.html" class="hub-card">
+                <div class="hub-card-title" id="card-title-4">Films</div>
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-name">Louis</div>
+        <div class="footer-contact">
+            <a href="mailto:louisplanardpro@gmail.com">louisplanardpro@gmail.com</a>
+            <a href="https://www.instagram.com/louis_fait_des_films" target="_blank">Instagram</a>
+        </div>
+    </footer>
+
+    <script>
+        let currentLang = 'fr';
+        const T = {
+            fr: {
+                themeDay: 'Mode nuit', themeNight: 'Mode jour',
+                navHome: 'Accueil', navBlog: 'Blog', navAbout: 'À propos',
+                hubTitle: 'Projets',
+                hubSubtitle: 'Musique · Théâtre · Vidéo · Cinéma',
+                cards: [
+                    'Musique',
+                    'Théâtre',
+                    'Montages Vidéo',
+                    'Films'
+                ]
+            },
+            en: {
+                themeDay: 'Dark mode', themeNight: 'Light mode',
+                navHome: 'Home', navBlog: 'Blog', navAbout: 'About Me',
+                hubTitle: 'Projects',
+                hubSubtitle: 'Music · Theatre · Video · Cinema',
+                cards: [
+                    'Music',
+                    'Theatre',
+                    'Video Editing',
+                    'Films'
+                ]
+            }
+        };
+
+        const mainBody    = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon     = document.querySelector('link[rel="icon"]');
+
+        function saveDarkMode(isDark) { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); }
+        function saveLang(lang) { localStorage.setItem('lang', lang); }
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = T[lang];
+            document.getElementById('nav-home').textContent  = t.navHome;
+            document.getElementById('nav-blog').textContent  = t.navBlog;
+            document.getElementById('nav-about').textContent = t.navAbout;
+            document.getElementById('hub-title').textContent    = t.hubTitle;
+            document.getElementById('hub-subtitle').textContent = t.hubSubtitle;
+            t.cards.forEach((title, i) => {
+                document.getElementById('card-title-' + (i+1)).textContent = title;
+            });
+            const isDark = mainBody.classList.contains('dark-mode');
+            themeToggle.textContent = isDark ? t.themeNight : t.themeDay;
+            document.getElementById('lang-fr').classList.toggle('active-lang', lang === 'fr');
+            document.getElementById('lang-en').classList.toggle('active-lang', lang === 'en');
+            saveLang(lang);
+        }
+
+        function loadPreferences() {
+            const savedLang = localStorage.getItem('lang');
+            if (savedLang === 'fr' || savedLang === 'en') setLang(savedLang);
+            else setLang('fr');
+            const savedDark = localStorage.getItem('darkMode');
+            if (savedDark === 'true') {
+                mainBody.classList.add('dark-mode');
+                themeToggle.textContent = T[currentLang].themeNight;
+                const src = './doc/logo_nuit.png';
+                toggleImage.src = src; favicon.href = src;
+            } else {
+                mainBody.classList.remove('dark-mode');
+                themeToggle.textContent = T[currentLang].themeDay;
+                const src = './doc/logo.png';
+                toggleImage.src = src; favicon.href = src;
+            }
+        }
+
+        // Gestion de l'expansion du header
+        const header = document.getElementById('mainHeader');
+        function toggleHeader() { header.classList.toggle('expanded'); }
+        toggleImage.onclick = toggleHeader;
+
+        themeToggle.onclick = function() {
+            const isDark = mainBody.classList.toggle('dark-mode');
+            saveDarkMode(isDark);
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? './doc/logo_nuit.png' : './doc/logo.png';
+            toggleImage.src = src; favicon.href = src;
+        };
+
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); setLang('fr'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); setLang('en'); };
+        loadPreferences();
+    </script>
+</body>
+</html>

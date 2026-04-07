@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Louis — Expérience théâtrale</title>
+    <link rel="icon" href="./doc/logo.png" type="image/png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Radley:ital@0;1&display=swap" rel="stylesheet">
+    <script src="https://player.vimeo.com/api/player.js"></script>
+    <style>
+        /* ===== VARIABLES & BASE ===== */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            --bg-color: #f4f1e8;
+            --text-color: #191919;
+            --border-color: #191919;
+            --card-bg: rgba(25, 25, 25, 0.04);
+            --modal-bg: #ffffff;
+            --modal-text: #191919;
+            --modal-border: rgba(25, 25, 25, 0.2);
+            --btn-bg: #9c481a;
+            --btn-text: #f4f1e8;
+            font-family: 'Radley', serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --text-color: #f0f0f0;
+            --border-color: #f0f0f0;
+            --card-bg: rgba(240, 240, 240, 0.05);
+            --modal-bg: #2a2a2a;
+            --modal-text: #f0f0f0;
+            --modal-border: rgba(240, 240, 240, 0.2);
+            --btn-bg: #f0f0f0;
+            --btn-text: #1a1a1a;
+        }
+
+        /* ===== HEADER : toujours collé, fond semi-transparent et flou ===== */
+        header {
+            position: sticky;
+            top: 0;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+            background-color: color-mix(in srgb, var(--bg-color) 85%, transparent);
+            backdrop-filter: blur(8px);
+            z-index: 100;
+            transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+            flex-shrink: 0;
+            border-radius: 0 !important;
+        }
+        header.expanded {
+            background-color: color-mix(in srgb, var(--bg-color) 92%, transparent);
+            backdrop-filter: blur(12px);
+            border-radius: 0 !important;
+        }
+        header.expanded::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 5%;
+            width: 90%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--border-color) 25%, transparent), transparent);
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .logo-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            transition: left 0.5s cubic-bezier(0.4, 1.2, 0.6, 1), transform 0.5s cubic-bezier(0.4, 1.2, 0.6, 1);
+            z-index: 20;
+            line-height: 0;
+        }
+        header.expanded .logo-container {
+            left: 2rem;
+            transform: translate(0, -50%);
+        }
+        #toggleImage {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            border-radius: 12px;
+            display: block;
+        }
+        #toggleImage:hover { transform: scale(1.05) rotate(3deg); }
+
+        .options {
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.25s ease, visibility 0s 0.3s;
+            margin-left: auto;
+        }
+        header.expanded .options {
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 0.25s ease 0.05s, visibility 0s 0s;
+        }
+        .options ul {
+            list-style: none;
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+        }
+        .options li {
+            display: inline-block;
+            line-height: 1;
+        }
+        .options a, .theme-toggle {
+            color: var(--text-color);
+            text-decoration: none;
+            font-family: 'Radley', serif;
+            font-size: 1.1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1.5px solid transparent;
+            transition: border-color 0.2s, opacity 0.2s;
+            cursor: pointer;
+            background: none;
+            border: none;
+            display: inline-block;
+            line-height: 1.2;
+        }
+        .options a:hover, .theme-toggle:hover {
+            border-bottom-color: var(--border-color);
+        }
+
+        .lang-switcher {
+            display: flex;
+            align-items: baseline;
+            gap: 0.3rem;
+        }
+        .lang-opt {
+            color: var(--text-color);
+            text-decoration: none;
+            font-size: 1rem;
+            padding: 0.2rem 0;
+            border-bottom: 1.5px solid transparent;
+            opacity: 0.5;
+            transition: opacity 0.2s, border-color 0.2s;
+        }
+        .lang-opt.active-lang {
+            border-bottom-color: var(--border-color);
+            opacity: 1;
+        }
+        .lang-opt:hover {
+            opacity: 1;
+        }
+        .lang-sep {
+            opacity: 0.4;
+            font-size: 1rem;
+            user-select: none;
+        }
+
+        /* ===== BACK-BAR (supprimée) ===== */
+
+        /* ===== MAIN ===== */
+        main {
+            flex: 1;
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 2rem 2rem 5rem;
+        }
+        .theatre-section {
+            opacity: 0;
+            animation: fadeUp 0.7s ease forwards;
+            animation-delay: 0.05s;
+        }
+        .section-header {
+            display: flex;
+            align-items: baseline;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .section-title {
+            font-size: clamp(2rem, 5vw, 3.2rem);
+            font-weight: 400;
+            font-style: italic;
+            line-height: 1;
+        }
+        .section-label {
+            font-size: 0.8rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            opacity: 0.4;
+        }
+        .intro-text {
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 2.5rem;
+            opacity: 0.75;
+        }
+        .intro-text a {
+            color: inherit;
+            text-decoration: none;
+            border-bottom: 1px dotted var(--border-color);
+        }
+        .intro-text a:hover {
+            border-bottom-style: solid;
+            opacity: 1;
+        }
+
+        /* ===== GRILLE VIDÉOS ===== */
+        .videos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 2rem 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .video-card {
+            cursor: pointer;
+            transition: transform 0.25s ease, box-shadow 0.2s;
+            border-radius: 20px;
+            overflow: hidden;
+            background: var(--card-bg);
+            border: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent);
+        }
+        .video-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+        }
+        .video-poster {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #1a1a1a;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2.5rem;
+            opacity: 0.6;
+            transition: opacity 0.2s;
+        }
+        .video-card:hover .video-poster {
+            opacity: 0.9;
+        }
+        .video-info {
+            padding: 0.8rem 1rem 1rem;
+        }
+        .video-title {
+            font-size: 1rem;
+            font-weight: 400;
+            font-style: italic;
+            margin-bottom: 0.3rem;
+            line-height: 1.3;
+        }
+        .video-meta {
+            font-size: 0.75rem;
+            opacity: 0.6;
+        }
+
+        /* ===== LECTEUR VIDÉO ===== */
+        .video-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.9);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .video-overlay.active { display: flex; }
+        .overlay-inner {
+            position: relative;
+            width: min(90%, 1000px);
+            background: #000;
+            border-radius: 28px;
+            overflow: hidden;
+            outline: none;
+        }
+        .video-container {
+            position: relative;
+            width: 100%;
+            background: #000;
+        }
+        .vimeo-player {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border: 0;
+            outline: none;
+        }
+        .video-click-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            cursor: pointer;
+            z-index: 5;
+        }
+        .custom-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(8px);
+            color: white;
+            font-family: 'Radley', serif;
+            position: relative;
+            z-index: 10;
+        }
+        .custom-controls button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.2rem 0.5rem;
+            border-radius: 40px;
+            transition: background 0.2s;
+            font-family: 'Radley', serif;
+            outline: none;
+        }
+        .custom-controls button:hover { background: rgba(255,255,255,0.2); }
+        .progress-bar {
+            flex: 1;
+            height: 5px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-filled {
+            height: 100%;
+            width: 0%;
+            background: #e0e0e0;
+            border-radius: 10px;
+            opacity: 0.8;
+        }
+        .time-display {
+            font-family: inherit;
+            font-size: 0.85rem;
+        }
+
+        /* ===== FOOTER ===== */
+        footer {
+            border-top: 1px solid color-mix(in srgb, var(--border-color) 15%, transparent);
+            padding: 3rem 2.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 2rem;
+            margin-top: 2rem;
+            border-radius: 16px 16px 0 0;
+            background: var(--card-bg);
+        }
+        .footer-name { font-size: 1.5rem; font-style: italic; }
+        .footer-contact {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            text-align: right;
+        }
+        .footer-contact a {
+            color: var(--text-color);
+            text-decoration: none;
+            border-bottom: 1.5px solid transparent;
+            opacity: 0.65;
+            transition: 0.2s;
+        }
+        .footer-contact a:hover {
+            border-bottom-color: var(--border-color);
+            opacity: 1;
+        }
+
+        /* ===== KEYFRAMES ===== */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 640px) {
+            header { height: 80px; padding: 0 1rem; }
+            .logo-container { top: 50%; }
+            #toggleImage { width: 55px; height: 55px; }
+            header.expanded .logo-container { left: 1rem; }
+            .options ul { gap: 1.2rem; }
+            .options a, .theme-toggle { font-size: 1rem; }
+            .lang-opt, .lang-sep { font-size: 0.9rem; }
+            main { padding: 1.5rem 1rem 3rem; }
+            .videos-grid { grid-template-columns: 1fr; gap: 1rem; }
+            .video-card { border-radius: 16px; }
+            .custom-controls { gap: 0.5rem; padding: 0.5rem; }
+            .custom-controls button { font-size: 1rem; border-radius: 30px; }
+            .overlay-inner { border-radius: 20px; }
+            footer { border-radius: 12px 12px 0 0; padding: 2rem 1.5rem; }
+        }
+    </style>
+</head>
+<body id="mainBody">
+    <header id="mainHeader" class="expanded">
+        <div class="logo-container">
+            <img src="./doc/logo.png" alt="Menu" id="toggleImage">
+        </div>
+        <nav class="options">
+            <ul>
+                <li><a href="index.html" id="nav-home">Accueil</a></li>
+                <li><a href="projets.html" id="nav-projects">Projets</a></li>
+                <li><a href="theatre.html" id="nav-theatre">Théâtre</a></li>
+                <li><a href="musique.html" id="nav-music">Musique</a></li>
+                <li>
+                    <div class="lang-switcher">
+                        <a href="#" id="lang-fr" class="lang-opt active-lang">FR</a>
+                        <span class="lang-sep">/</span>
+                        <a href="#" id="lang-en" class="lang-opt">EN</a>
+                    </div>
+                </li>
+                <li><button class="theme-toggle" id="themeToggle">Mode nuit</button></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <div class="theatre-section">
+            <div class="section-header">
+                <h2 class="section-title" id="section-title">Théâtre</h2>
+                <span class="section-label">01</span>
+            </div>
+            <div class="intro-text" id="intro-text"></div>
+
+            <div class="videos-grid" id="videosGrid">
+                <div class="video-card" data-id="1180136059">
+                    <div class="video-poster">▶</div>
+                    <div class="video-info">
+                        <div class="video-title">Chez le docteur</div>
+                        <div class="video-meta">2016 · Petit Théâtre Florentin</div>
+                    </div>
+                </div>
+                <div class="video-card" data-id="1180137594">
+                    <div class="video-poster">▶</div>
+                    <div class="video-info">
+                        <div class="video-title">Embouteillage</div>
+                        <div class="video-meta">2022 · Jean-Claude Grumberg · Petit Théâtre Florentin</div>
+                    </div>
+                </div>
+                <div class="video-card" data-id="1180134049">
+                    <div class="video-poster">▶</div>
+                    <div class="video-info">
+                        <div class="video-title">Mesdames (Grand Corps Malade)</div>
+                        <div class="video-meta">2024 · Petit Théâtre Florentin</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="videoOverlay" class="video-overlay" onclick="closeVideoOverlay(event)">
+        <div class="overlay-inner" onclick="event.stopPropagation()">
+            <div class="video-container">
+                <div id="vimeoPlayer" class="vimeo-player"></div>
+                <div class="video-click-overlay" id="videoClickOverlay"></div>
+                <div class="custom-controls">
+                    <button id="playPauseBtn" aria-label="Lecture/Pause">►</button>
+                    <div class="progress-bar" id="progressBarVideo">
+                        <div class="progress-filled" id="progressFilledVideo"></div>
+                    </div>
+                    <span class="time-display" id="timeDisplayVideo">0:00 / 0:00</span>
+                    <button id="fullscreenBtn" aria-label="Plein écran">⤢</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="footer-name">Louis</div>
+        <div class="footer-contact">
+            <a href="mailto:louisplanardpro@gmail.com">louisplanardpro@gmail.com</a>
+            <a href="https://www.instagram.com/louis_fait_des_films" target="_blank">Instagram</a>
+        </div>
+    </footer>
+
+    <script>
+        // ==================== GESTION DU HEADER ====================
+        const header = document.getElementById('mainHeader');
+        function saveHeaderState() { localStorage.setItem('headerExpanded', header.classList.contains('expanded') ? 'true' : 'false'); }
+        function loadHeaderState() {
+            const saved = localStorage.getItem('headerExpanded');
+            if (saved === 'true') header.classList.add('expanded');
+            else header.classList.remove('expanded');
+        }
+        function toggleHeader() { header.classList.toggle('expanded'); saveHeaderState(); }
+
+        // ==================== TRADUCTIONS ====================
+        const T = {
+            fr: {
+                themeDay: 'Mode nuit', themeNight: 'Mode jour',
+                navHome: 'Accueil', navProjects: 'Projets', navTheatre: 'Théâtre', navMusic: 'Musique',
+                sectionTitle: 'Théâtre',
+                intro: 'Je fais du théâtre depuis mes huit ans au <a href="https://www.facebook.com/p/Le-Petit-Th%C3%A9%C3%A2tre-Florentin-100075982661914/" target="_blank" rel="noopener noreferrer">Petit Théâtre Florentin</a> à Bouchain, une vraie passion avec laquelle j’ai beaucoup grandi. Aujourd’hui, cette troupe de théâtre est ma deuxième famille. De mes premières représentations aux dernières, j’ai appris, mais avant tout j’ai toujours pris beaucoup de plaisir à jouer avec cette famille. Sur cette page, vous retrouverez des extraits de mes apparitions scéniques avec le Petit Théâtre Florentin.',
+                card1: { title: 'Chez le docteur', meta: '2016 · Petit Théâtre Florentin' },
+                card2: { title: 'Embouteillage', meta: '2022 · Jean-Claude Grumberg · Petit Théâtre Florentin' },
+                card3: { title: 'Mesdames (Grand Corps Malade)', meta: '2024 · Petit Théâtre Florentin' }
+            },
+            en: {
+                themeDay: 'Dark mode', themeNight: 'Light mode',
+                navHome: 'Home', navProjects: 'Projects', navTheatre: 'Theatre', navMusic: 'Music',
+                sectionTitle: 'Theatre',
+                intro: 'I have been performing on stage since I was eight years old at the <a href="https://www.facebook.com/p/Le-Petit-Th%C3%A9%C3%A2tre-Florentin-100075982661914/" target="_blank" rel="noopener noreferrer">Petit Théâtre Florentin</a> in Bouchain. That helped me grow a lot. Today, this theatre company is part of my family. From my first performances to the most recent ones, I have learned a lot, but above all, I have always enjoyed performing with them. On this page, you will find extracts from my stage appearances with the Petit Théâtre Florentin.',
+                card1: { title: 'Chez le docteur', meta: '2016 · Petit Théâtre Florentin' },
+                card2: { title: 'Embouteillage', meta: '2022 · Jean-Claude Grumberg · Petit Théâtre Florentin' },
+                card3: { title: 'Mesdames (Grand Corps Malade)', meta: '2024 · Petit Théâtre Florentin' }
+            }
+        };
+
+        // ==================== LECTEUR VIDÉO ====================
+        let currentVideoPlayer = null;
+        let videoProgressInterval = null;
+
+        const videoOverlay = document.getElementById('videoOverlay');
+        const vimeoPlayerDiv = document.getElementById('vimeoPlayer');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const progressBarVideo = document.getElementById('progressBarVideo');
+        const progressFilledVideo = document.getElementById('progressFilledVideo');
+        const timeDisplayVideo = document.getElementById('timeDisplayVideo');
+        const fullscreenBtn = document.getElementById('fullscreenBtn');
+        const videoClickOverlay = document.getElementById('videoClickOverlay');
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function updateVideoProgress() {
+            if (currentVideoPlayer) {
+                currentVideoPlayer.getCurrentTime().then(seconds => {
+                    currentVideoPlayer.getDuration().then(duration => {
+                        const percent = (seconds / duration) * 100;
+                        progressFilledVideo.style.width = `${percent}%`;
+                        timeDisplayVideo.textContent = `${formatTime(seconds)} / ${formatTime(duration)}`;
+                    });
+                }).catch(e => console.log("Erreur temps", e));
+            }
+        }
+
+        function stopVideoProgressInterval() { if (videoProgressInterval) { clearInterval(videoProgressInterval); videoProgressInterval = null; } }
+        function startVideoProgressUpdates() { stopVideoProgressInterval(); videoProgressInterval = setInterval(updateVideoProgress, 500); }
+
+        function toggleVideoPlayPause() {
+            if (currentVideoPlayer) {
+                currentVideoPlayer.getPaused().then(paused => {
+                    if (paused) currentVideoPlayer.play();
+                    else currentVideoPlayer.pause();
+                });
+            }
+        }
+
+        function initVideoPlayer(videoId) {
+            if (currentVideoPlayer) {
+                stopVideoProgressInterval();
+                currentVideoPlayer.destroy().catch(e => console.log("Destroy error", e));
+                currentVideoPlayer = null;
+            }
+            vimeoPlayerDiv.innerHTML = '';
+            const iframe = document.createElement('iframe');
+            iframe.setAttribute('src', `https://player.vimeo.com/video/${videoId}?badge=0&autopause=0&player_id=0&app_id=58479&loop=0&autoplay=0&muted=0&controls=0&portrait=0&byline=0&title=0`);
+            iframe.setAttribute('allow', 'autoplay; fullscreen; picture-in-picture');
+            iframe.setAttribute('allowfullscreen', '');
+            iframe.classList.add('vimeo-player');
+            vimeoPlayerDiv.appendChild(iframe);
+            const container = document.querySelector('.video-container');
+            let clickOverlay = document.getElementById('videoClickOverlay');
+            if (!clickOverlay) {
+                clickOverlay = document.createElement('div');
+                clickOverlay.id = 'videoClickOverlay';
+                clickOverlay.className = 'video-click-overlay';
+                container.appendChild(clickOverlay);
+            }
+            document.getElementById('videoClickOverlay').onclick = toggleVideoPlayPause;
+
+            currentVideoPlayer = new Vimeo.Player(iframe);
+            currentVideoPlayer.ready().then(() => {
+                currentVideoPlayer.getPaused().then(paused => {
+                    playPauseBtn.textContent = paused ? '►' : '❚❚';
+                });
+                currentVideoPlayer.on('play', () => { playPauseBtn.textContent = '❚❚'; startVideoProgressUpdates(); });
+                currentVideoPlayer.on('pause', () => { playPauseBtn.textContent = '►'; stopVideoProgressInterval(); });
+                currentVideoPlayer.on('ended', () => {
+                    playPauseBtn.textContent = '►';
+                    stopVideoProgressInterval();
+                    progressFilledVideo.style.width = '0%';
+                    timeDisplayVideo.textContent = '0:00 / 0:00';
+                });
+                currentVideoPlayer.on('timeupdate', updateVideoProgress);
+                updateVideoProgress();
+                startVideoProgressUpdates();
+            }).catch(err => console.log("Erreur init Vimeo", err));
+        }
+
+        function openVideoPlayer(videoId) {
+            initVideoPlayer(videoId);
+            videoOverlay.classList.add('active');
+        }
+
+        function closeVideoOverlay(e) {
+            if (e) e.preventDefault();
+            stopVideoProgressInterval();
+            if (currentVideoPlayer) { currentVideoPlayer.destroy().catch(()=>{}); currentVideoPlayer = null; }
+            vimeoPlayerDiv.innerHTML = '';
+            videoOverlay.classList.remove('active');
+        }
+
+        window.addEventListener('keydown', function(e) {
+            if (!videoOverlay.classList.contains('active')) return;
+            if (!currentVideoPlayer) return;
+            if (e.code === 'Space') { e.preventDefault(); toggleVideoPlayPause(); return; }
+            if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') e.preventDefault();
+            if (e.key === 'ArrowLeft') {
+                currentVideoPlayer.getCurrentTime().then(current => currentVideoPlayer.setCurrentTime(Math.max(0, current - 5)));
+            } else if (e.key === 'ArrowRight') {
+                currentVideoPlayer.getDuration().then(duration => {
+                    currentVideoPlayer.getCurrentTime().then(current => currentVideoPlayer.setCurrentTime(Math.min(duration, current + 5)));
+                });
+            } else if (e.key === 'Escape') { e.preventDefault(); closeVideoOverlay(); }
+        });
+
+        playPauseBtn.onclick = toggleVideoPlayPause;
+        if (videoClickOverlay) videoClickOverlay.onclick = toggleVideoPlayPause;
+        progressBarVideo.onclick = (e) => {
+            if (currentVideoPlayer) {
+                const rect = progressBarVideo.getBoundingClientRect();
+                const percent = (e.clientX - rect.left) / rect.width;
+                currentVideoPlayer.getDuration().then(duration => currentVideoPlayer.setCurrentTime(duration * percent));
+            }
+        };
+        fullscreenBtn.onclick = () => {
+            const container = document.querySelector('.overlay-inner');
+            if (!document.fullscreenElement) {
+                if (container.requestFullscreen) container.requestFullscreen();
+                else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+                else if (container.msRequestFullscreen) container.msRequestFullscreen();
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+                else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+                else if (document.msExitFullscreen) document.msExitFullscreen();
+            }
+        };
+        function updateFullscreenIcon() {
+            fullscreenBtn.textContent = (document.fullscreenElement || document.webkitFullscreenElement) ? '⤬' : '⤢';
+        }
+        document.addEventListener('fullscreenchange', updateFullscreenIcon);
+        document.addEventListener('webkitfullscreenchange', updateFullscreenIcon);
+
+        // ==================== LANGUE, THÈME, AFFICHAGE ====================
+        const mainBody = document.getElementById('mainBody');
+        const themeToggle = document.getElementById('themeToggle');
+        const toggleImage = document.getElementById('toggleImage');
+        const favicon = document.querySelector('link[rel="icon"]');
+        const videosGrid = document.getElementById('videosGrid');
+
+        function saveDarkMode(isDark) { localStorage.setItem('darkMode', isDark ? 'true' : 'false'); }
+        function saveLang(lang) { localStorage.setItem('lang', lang); }
+
+        let currentLang = 'fr';
+
+        function setLang(lang) {
+            currentLang = lang;
+            const t = T[lang];
+            document.getElementById('nav-home').textContent = t.navHome;
+            document.getElementById('nav-projects').textContent = t.navProjects;
+            document.getElementById('nav-theatre').textContent = t.navTheatre;
+            document.getElementById('nav-music').textContent = t.navMusic;
+            document.getElementById('section-title').textContent = t.sectionTitle;
+            document.getElementById('intro-text').innerHTML = t.intro;
+
+            const cards = document.querySelectorAll('.video-card');
+            if (cards.length >= 3) {
+                cards[0].querySelector('.video-title').textContent = t.card1.title;
+                cards[0].querySelector('.video-meta').textContent = t.card1.meta;
+                cards[1].querySelector('.video-title').textContent = t.card2.title;
+                cards[1].querySelector('.video-meta').textContent = t.card2.meta;
+                cards[2].querySelector('.video-title').textContent = t.card3.title;
+                cards[2].querySelector('.video-meta').textContent = t.card3.meta;
+                cards[0].onclick = () => openVideoPlayer('1180136059');
+                cards[1].onclick = () => openVideoPlayer('1180137594');
+                cards[2].onclick = () => openVideoPlayer('1180134049');
+            }
+            themeToggle.textContent = mainBody.classList.contains('dark-mode') ? t.themeNight : t.themeDay;
+            document.getElementById('lang-fr').classList.toggle('active-lang', lang === 'fr');
+            document.getElementById('lang-en').classList.toggle('active-lang', lang === 'en');
+            saveLang(lang);
+        }
+
+        function loadPreferences() {
+            const savedLang = localStorage.getItem('lang');
+            if (savedLang === 'fr' || savedLang === 'en') setLang(savedLang);
+            else setLang('fr');
+            const savedDark = localStorage.getItem('darkMode');
+            if (savedDark === 'true') {
+                mainBody.classList.add('dark-mode');
+                themeToggle.textContent = T[currentLang].themeNight;
+                toggleImage.src = './doc/logo_nuit.png';
+                favicon.href = './doc/logo_nuit.png';
+            } else {
+                mainBody.classList.remove('dark-mode');
+                themeToggle.textContent = T[currentLang].themeDay;
+                toggleImage.src = './doc/logo.png';
+                favicon.href = './doc/logo.png';
+            }
+        }
+
+        themeToggle.onclick = function() {
+            const isDark = mainBody.classList.toggle('dark-mode');
+            saveDarkMode(isDark);
+            themeToggle.textContent = isDark ? T[currentLang].themeNight : T[currentLang].themeDay;
+            const src = isDark ? './doc/logo_nuit.png' : './doc/logo.png';
+            toggleImage.src = src;
+            favicon.href = src;
+        };
+
+        document.getElementById('lang-fr').onclick = function(e) { e.preventDefault(); setLang('fr'); };
+        document.getElementById('lang-en').onclick = function(e) { e.preventDefault(); setLang('en'); };
+        toggleImage.onclick = toggleHeader;
+
+        loadPreferences();
+        loadHeaderState();
+
+        window.openVideoPlayer = openVideoPlayer;
+        window.closeVideoOverlay = closeVideoOverlay;
+        window.toggleHeader = toggleHeader;
+    </script>
+</body>
+</html>
