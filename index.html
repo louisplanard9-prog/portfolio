@@ -550,7 +550,13 @@
         // ==================== ÉVÉNEMENTS ====================
         navHome.addEventListener('click', (e) => { e.preventDefault(); window.location.reload(); });
         navProjects.addEventListener('click', (e) => { e.preventDefault(); header.classList.remove('expanded'); window.location.href = 'projets.html'; });
-        navContact.addEventListener('click', (e) => { e.preventDefault(); header.classList.remove('expanded'); });
+        
+        // Modification ici : le lien Contact ouvre un mailto et replie le menu
+        navContact.addEventListener('click', (e) => {
+            e.preventDefault();
+            header.classList.remove('expanded');
+            window.location.href = 'mailto:louisplanardpro@gmail.com';
+        });
 
         themeToggle.addEventListener('click', () => {
             const isDark = body.classList.toggle('dark-mode');
